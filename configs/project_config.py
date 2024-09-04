@@ -11,6 +11,7 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
+
 @dataclass
 class GraphInfo:
     """
@@ -23,6 +24,7 @@ class GraphInfo:
     graph_name: str
     graph_id: str
 
+
 @dataclass
 class AgentInfo:
     """
@@ -31,10 +33,15 @@ class AgentInfo:
     Attributes:
         agent_name (str): The name of the agent.
         agent_id (str): The unique identifier of the agent.
+        alias (str): The alias of the agent.
+        description (str): The description of the agent.
     """
 
     agent_name: str
     agent_id: str
+    alias: str
+    description: str
+
 
 class LLMConfig:
     """
@@ -86,8 +93,10 @@ class LLMConfig:
                 model_kwargs=self.model_kwargs
             )
         else:
-            raise ValueError(f"Unsupported model configuration: {self.model}. Only ChatOpenAI is currently supported.")
-        
+            raise ValueError(
+                f"Unsupported model configuration: {self.model}. Only ChatOpenAI is currently supported.")
+
+
 class AgentConfig(AgentInfo):
     """
     Configuration for an agent, including its LLM settings and an optional thread ID.
@@ -99,7 +108,7 @@ class AgentConfig(AgentInfo):
         thread_id (Union[int, None]): Optional thread ID for the agent.
     """
 
-    def __init__(self, agent_name: str, agent_id: str, llm_config: LLMConfig) -> None:
+    def __init__(self, agent_name: str, agent_id: str, alias: str, description: str, llm_config: LLMConfig) -> None:
         """
         Initializes the agent configuration with the given parameters.
 
@@ -108,7 +117,7 @@ class AgentConfig(AgentInfo):
             agent_id (str): The unique identifier of the agent.
             llm_config (LLMConfig): The LLM configuration for this agent.
         """
-        super().__init__(agent_name, agent_id)
+        super().__init__(agent_name, agent_id, alias, description)
         self.llm: ChatOpenAI = llm_config.create_llm()
         self.thread_id: Union[int, None] = None
 
@@ -120,6 +129,7 @@ class AgentConfig(AgentInfo):
             thread_id (int): The thread ID to be set.
         """
         self.thread_id = thread_id
+
 
 class ProjectGraphs(Enum):
     """
@@ -162,6 +172,7 @@ class ProjectGraphs(Enum):
         """
         return self.value.graph_id
 
+
 class ProjectAgents(Enum):
     """
     Enum that holds all the agents used by the project.
@@ -177,14 +188,68 @@ class ProjectAgents(Enum):
         human (AgentInfo): Information about the Human In The Loop agent.
     """
 
-    supervisor = AgentInfo("Project Supervisor", "SUP_01")
-    architect = AgentInfo("Solution Architect", "ARC_02")
-    coder = AgentInfo("Software Engineer", "ENG_03")
-    rag = AgentInfo("Standards Extractor", "RAG_04")
-    planner = AgentInfo("Project Planner", "PLN_05")
-    tester = AgentInfo("Unit Tester", "TST_06")
-    modernizer = AgentInfo("AST Generator", "MOD_07")
-    human = AgentInfo("Human Loop", "HUM_08")
+    supervisor = AgentInfo(
+        "Project Supervisor",
+        "SUP_01",
+        alias="supervisor",
+        description="Coordinates with the team, assigns tasks, and guides the team toward successful project completion."
+    )
+
+    architect = AgentInfo(
+        "Solution Architect",
+        "ARC_02",
+        alias="architect",
+        description="Defines the project requirements and outlines the architectural framework."
+    )
+
+    coder = AgentInfo(
+        "Software Engineer",
+        "ENG_03",
+        alias="coder",
+        description="Develops and writes code to the tasks assigned."
+    )
+
+    rag = AgentInfo(
+        "Document Repository Manager",
+        "RAG_04",
+        alias="rag",
+        description="Oversees the vector database, manages document and file storage, and provides relevant information in response to queries."
+    )
+
+    planner = AgentInfo(
+        "Project Planner",
+        "PLN_05",
+        alias="planner",
+        description="Creates detailed plans for task execution, based on requirements provided."
+    )
+
+    tester = AgentInfo(
+        "Unit Tester",
+        "TST_06",
+        alias="tests_generator",
+        description="Develops and executes unit test cases to ensure code quality and functionality."
+    )
+
+    modernizer = AgentInfo(
+        "Knowledge Graph Generator",
+        "MOD_07",
+        alias="modernizer",
+        description="Generates and maintains the knowledge graph for the project, facilitating data relationships and insights."
+    )
+
+    human = AgentInfo(
+        "Human Intervention Specialist",
+        "HUM_08",
+        alias="human",
+        description="Provides assistance and oversight when automated systems encounter issues or produce unreliable results."
+    )
+
+    # reviewer = AgentInfo(
+    #     "Code Reviewer",
+    #     "REV_09",
+    #     alias="reviwer",
+    #     description="Responsible for evaluating code quality and ensuring adherence to coding standards. This includes reviewing code for clean code principles, naming conventions, and compliance with both internal and external standards."
+    # )
 
     @property
     def agent_name(self) -> str:
@@ -205,11 +270,35 @@ class ProjectAgents(Enum):
             str: The unique identifier of the agent.
         """
         return self.value.agent_id
-    
+
+    @property
+    def alias(self) -> str:
+        """
+        Returns the alias of the agent, if it exists.
+
+        Returns:
+            Optional[str]: The alias of the agent, or None if not set.
+        """
+        return self.value.alias
+
+    @property
+    def description(self) -> str:
+        """
+        Returns the description of the agent, if it exists.
+
+        Returns:
+            Optional[str]: The description of the agent, or None if not set.
+        """
+        return self.value.description
+
+
 AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.supervisor.agent_id: AgentConfig(
         ProjectAgents.supervisor.agent_name,
         ProjectAgents.supervisor.agent_id,
+        ProjectAgents.supervisor.alias,
+        ProjectAgents.supervisor.description,
+
         LLMConfig(
             model="gpt-4o-2024-05-13",
             temperature=0,
@@ -221,6 +310,8 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.architect.agent_id: AgentConfig(
         ProjectAgents.architect.agent_name,
         ProjectAgents.architect.agent_id,
+        ProjectAgents.architect.alias,
+        ProjectAgents.architect.description,
         LLMConfig(
             model="gpt-4o-2024-05-13",
             temperature=0.3,
@@ -232,6 +323,8 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.coder.agent_id: AgentConfig(
         ProjectAgents.coder.agent_name,
         ProjectAgents.coder.agent_id,
+        ProjectAgents.coder.alias,
+        ProjectAgents.coder.description,
         LLMConfig(
             model="gpt-4o-2024-05-13",
             temperature=0.3,
@@ -243,6 +336,8 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.rag.agent_id: AgentConfig(
         ProjectAgents.rag.agent_name,
         ProjectAgents.rag.agent_id,
+        ProjectAgents.rag.alias,
+        ProjectAgents.rag.description,
         LLMConfig(
             model="gpt-4o-2024-05-13",
             temperature=0,
@@ -254,6 +349,8 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.planner.agent_id: AgentConfig(
         ProjectAgents.planner.agent_name,
         ProjectAgents.planner.agent_id,
+        ProjectAgents.planner.alias,
+        ProjectAgents.planner.description,
         LLMConfig(
             model="gpt-4o-2024-05-13",
             temperature=0.3,
@@ -265,6 +362,8 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.tester.agent_id: AgentConfig(
         ProjectAgents.tester.agent_name,
         ProjectAgents.tester.agent_id,
+        ProjectAgents.tester.alias,
+        ProjectAgents.tester.description,
         LLMConfig(
             model="gpt-4o-2024-05-13",
             temperature=0.3,
@@ -276,6 +375,8 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.modernizer.agent_id: AgentConfig(
         ProjectAgents.modernizer.agent_name,
         ProjectAgents.modernizer.agent_id,
+        ProjectAgents.modernizer.alias,
+        ProjectAgents.modernizer.description,
         LLMConfig(
             model="gpt-4o-2024-05-13",
             temperature=0.3,
@@ -287,6 +388,8 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.human.agent_id: AgentConfig(
         ProjectAgents.human.agent_name,
         ProjectAgents.human.agent_id,
+        ProjectAgents.human.alias,
+        ProjectAgents.human.description,
         LLMConfig(
             model="gpt-4o-2024-05-13",
             temperature=0.3,
@@ -296,6 +399,7 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
         )
     )
 }
+
 
 class ProjectConfig:
     """
@@ -319,7 +423,7 @@ class ProjectConfig:
         self.vector_db_collections = {
             'MISMO-version-3.6-docs': os.path.join(os.getcwd(), "vector_collections")
         }
-    
+
     def __str__(self) -> str:
         """
         Returns a detailed string representation of the ProjectConfig instance.
@@ -394,13 +498,14 @@ class ProjectConfig:
         formatted_attributes = {
             key: format_value(value) for key, value in attributes.items()
         }
-        
+
         # Create a more informative string representation
         return (
             "Project Configuration:\n"
             "====================\n" +
             "\n".join(
-                f"{key}:\n{value}" if isinstance(value, (dict, list)) else f"{key}: {value}"
+                f"{key}:\n{value}" if isinstance(
+                    value, (dict, list)) else f"{key}: {value}"
                 for key, value in formatted_attributes.items()
             )
         )

@@ -43,5 +43,5 @@ class TeamMembers:
 
             if isinstance(attr_value, AgentMember):
                 members.append(attr_value)
-                
+
         return members

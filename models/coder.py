@@ -7,13 +7,14 @@ the files to be created, the location of the code, the actual code.
 """
 from pydantic import BaseModel, Field
 from typing_extensions import ClassVar
-from typing import Dict
+from typing import Dict, Any
+
 
 class ToolCall(BaseModel):
     """
     """
     name: str = Field(
-        description="The name of the tool to use", 
+        description="The name of the tool to use",
         required=True
     )
 
@@ -21,6 +22,7 @@ class ToolCall(BaseModel):
         description="arguments to the tools",
         required=True
     )
+
 
 class CoderModel(BaseModel):
     """
@@ -50,16 +52,16 @@ class CoderModel(BaseModel):
     )
 
     files_to_create: str = Field(
-        description="A list of absolute file paths that need to be created as part of the current task", 
+        description="A list of absolute file paths that need to be created as part of the current task",
         required=True
     )
 
     code: str = Field(
         description="The complete, well-documented working code that adheres to all "
-        "standards requested with the programming language, framework user requested ", 
+        "standards requested with the programming language, framework user requested ",
         required=True
     )
-    
+
     infile_license_comments: dict[str, str] = Field(
         description="The multiline standard license comment which goes on top of each file."
         "key should be the extension of the file, ex: language: python, key: .py"
@@ -76,6 +78,7 @@ class CoderModel(BaseModel):
 
     description: ClassVar[str] = "Schema representing the output from the "
     "Coder agent upon task completion."
+
 
 class FileSetupPlan(BaseModel):
     """
@@ -153,6 +156,7 @@ class FileSetupPlan(BaseModel):
         }
     )
 
+
 class FileContent(BaseModel):
     """
     Represents the content plan for files, including the code to be included in each file and license comments.
@@ -192,6 +196,7 @@ class FileContent(BaseModel):
         }
     )
 
+
 class CodeGenerationPlan(BaseModel):
     """
     """
@@ -210,7 +215,7 @@ class CodeGenerationPlan(BaseModel):
             .,
             'absolute_file_pathN'
         ]        
-        """, 
+        """,
         default=[],
         required=True
     )
@@ -221,7 +226,7 @@ class CodeGenerationPlan(BaseModel):
         should be the absolute path to the file, and the value should be the well-documented working 
         code for that particular file. The code should adhere to all the requirements and standards 
         provided.
-        """, 
+        """,
         default={},
         required=True
     )
@@ -256,3 +261,20 @@ class CodeGenerationPlan(BaseModel):
         default={},
         required=True
     )
+
+    def __getitem__(self, key: str) -> Any:
+        """
+        Allows getting attributes using square bracket notation.
+        """
+        if hasattr(self, key):
+            return getattr(self, key)
+        raise KeyError(f"Key '{key}' not found in RequirementsDocument.")
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        """
+        Allows setting attributes using square bracket notation.
+        """
+        if hasattr(self, key):
+            setattr(self, key, value)
+        else:
+            raise KeyError(f"Key '{key}' not found in RequirementsDocument.")

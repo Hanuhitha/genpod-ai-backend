@@ -10,6 +10,7 @@ from configs.project_config import AgentConfig
 GenericAgentState = TypeVar('GenericAgentState', bound=Any)
 GenericAgentGraph = TypeVar('GenericAgentGraph', bound=Graph)
 
+
 class AgentMember(Generic[GenericAgentState, GenericAgentGraph]):
     """
     Represents an individual agent with its configuration and state.
@@ -31,7 +32,7 @@ class AgentMember(Generic[GenericAgentState, GenericAgentGraph]):
     out_fields: list[str]
     inout_fields: list[str]
     graph: GenericAgentGraph
-    
+
     recursion_limit: int
 
     def __init__(self, agent_config: AgentConfig, state_class: GenericAgentState, graph: GenericAgentGraph) -> None:
@@ -40,6 +41,8 @@ class AgentMember(Generic[GenericAgentState, GenericAgentGraph]):
         """
         self.member_id = agent_config.agent_id
         self.member_name = agent_config.agent_name
+        self.description = agent_config.description
+        self.alias = agent_config.alias
         self.llm = agent_config.llm
         self.thread_id = agent_config.thread_id
 
@@ -50,9 +53,9 @@ class AgentMember(Generic[GenericAgentState, GenericAgentGraph]):
         self.inout_fields = sc.get_inout_fields()
 
         self.graph = graph
-        self.recursion_limit = -1 # means no limit set
+        self.recursion_limit = -1  # means no limit set
 
-    def invoke(self, input: Dict[str, Any] | Any) -> GenericAgentState: 
+    def invoke(self, input: Dict[str, Any] | Any) -> GenericAgentState:
         """
         """
         graph_config = {
@@ -83,7 +86,7 @@ class AgentMember(Generic[GenericAgentState, GenericAgentGraph]):
         """
 
         self.member_role = self.Role.LEAD
-    
+
     def set_role_to_member(self) -> None:
         """
         """
