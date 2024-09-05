@@ -203,19 +203,19 @@ class ProjectAgents(Enum):
         alias="architect",
         description="Defines the project requirements and outlines the architectural framework."
     )
-
+# Takes current_task, project_status, user input, and project details, and outputs tasks, requirements_document, and coder_inputs for call_coder. It also updates project status, folder structure, and other project parameters
     coder = AgentInfo(
         "Software Engineer", 
         "ENG_03",
         alias="coder",
         description="Develops and writes code to the tasks assigned."
     )
-
+# Uses coder_inputs from call_architect to process the task, and outputs current_task and agents_status, handling task completion or awaiting further input
     rag = AgentInfo(
         "Document Repository Manager", 
         "RAG_04",
         alias="rag",
-        description="Oversees the vector database, manages document and file storage, and provides relevant information in response to queries."
+        description="Gathers information based on the user query and provides it to the team. Triggered at the **beginning** of the project, or during development and provides relevant information in response to queries. Oversees the vector database, manages document and file storage.  Processes question from current_task and returns additional_info and rag_query_answer, which are used by other agents like call_architect and call_supervisor to provide further details"
     )
 
     planner = AgentInfo(
@@ -224,9 +224,9 @@ class ProjectAgents(Enum):
         alias="planner",
         description="Creates detailed plans for task execution, based on requirements provided."
     )
-
-    tests_generator = AgentInfo(
-        "Unit Tester", 
+#  Takes current_task and project_path as inputs, and outputs planned_tasks and planned_task_requirements, which are later used to assign tasks to call_coder.
+    tester = AgentInfo(
+        "Unit Tester",
         "TST_06",
         alias="tests_generator",
         description="Develops and executes unit test cases to ensure code quality and functionality."

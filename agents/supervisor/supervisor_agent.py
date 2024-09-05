@@ -797,14 +797,11 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 ("Returned from Planner", state['current_task']))
 
             logger.info("----------Response from Planner Agent----------")
-            logger.info("Planner Response: %r",planner_result['planned_task_map'])
-        elif state['current_task'].task_status == Status.ABANDONED:
-            logger.info("------Planner Has Abandoned a Task")
-            
-            state['agents_status'] = f'{self.team.planner.member_name} Abandoned a task. Task Id: {state['current_task'].task_id}'
-            self.called_agent = self.team.planner.member_id
-            self.responses[self.team.planner.member_id].append(("Returned from Planner with an abandoned task.", state['current_task']))
-        else: # TODO - LOW: Looks like this block of the code is expecting the current_task.task_status == Awaiting. If its included in the condition it will be easier to understand the code.
+            logger.info("Planner Response: %r",
+                        planner_result['planned_task_map'])
+
+            return {**state}
+        else:
             logger.info("----------Response from Planner Agent----------")
             logger.info("Planner Response: %s", state['current_task'].question)
 
@@ -864,7 +861,11 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         Returns:
         str: The next action to be taken based on the project status.
         """
-
+        # if state['project_status'] != PStatus.HALTED.value:
+        #     classifier_output = self.classifier.classify(state)
+        #     return f'call_{classifier_output.selected_agent.alias}'
+        # else:
+        #     return "update_state"
         if state['project_status'] == PStatus.NEW:
             # Project has been received by the team.
             # RAG(team member) now need to gather additonal information for the project
@@ -876,18 +877,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
             logger.info(f"Delegator: Invoking call_rag due to Project Status: {PStatus.NEW}")
             return 'call_rag'
-        # elif state['project_status'] == PStatus.INITIAL.value:
-        #     if self.calling_agent == self.team.supervisor.member_id:
-        #         return 'call_architect'
-        #     else:
-        #         return 'call_rag'
-        # if state['project_status'] != PStatus.HALTED.value:
-        #     classifier_output = self.classifier.classify(state)
-        #     return f'call_{classifier_output.selected_agent.alias}'
-        # else:
-        #     return "update_state"
-
- 
         elif state['project_status'] == PStatus.INITIAL:
             # Once the project is ready with additional information needed. Team can starting working on the project
             # architect is first team member who receives the project details and prepares the the requirements out of it.

@@ -44,7 +44,7 @@ class SupervisorState(TypedDict):
 
     # @in
     microservice_id: Annotated[
-        int, 
+        int,
         State.in_field("The id of the microservice being generated.")
     ]
 
@@ -81,6 +81,7 @@ class SupervisorState(TypedDict):
     # @out
     tasks: Annotated[
         TaskQueue, 
+        List[Task],
         State.out_field("The tasks create while generating the project.")
     ]
 
@@ -118,7 +119,7 @@ class SupervisorState(TypedDict):
 
     # @out
     human_feedback:  Annotated[
-        list[tuple[str, str]], 
+        list[tuple[str, str]],
         State.inout_field(
             "A list human inputs given during human in the loop process"
         )
@@ -149,6 +150,17 @@ class SupervisorState(TypedDict):
     ]
 
     # @out
+    current_agent: Annotated[
+        str,
+        State.out_field()
+    ]
+
+    visited_agents: Annotated[
+        List[str],
+        State.out_field()
+    ]
+
+    # @out
     planned_tasks: Annotated[
         PlannedTaskQueue, # This is list of work_packages created by the planner,
         State.out_field()
@@ -156,7 +168,7 @@ class SupervisorState(TypedDict):
 
     # @out
     planned_task_map: Annotated[
-        dict, # This is the a map of deliverables to work_packages
+        dict,  # This is the a map of deliverables to work_packages
         State.out_field()
     ]
 
@@ -166,38 +178,39 @@ class SupervisorState(TypedDict):
         State.out_field()
     ]
 
-    # @out - Architect 
+    # @out - Architect
     project_folder_strucutre: Annotated[
         str,
         State.in_field("The organized layout of directories and subdirectories that form the project's "
-        "file system, adhering to best practices for project structure.")
+                       "file system, adhering to best practices for project structure.")
     ]
 
     # @out
     code: Annotated[
-        str, 
+        str,
         State.out_field("The complete, well-documented working code that adheres to all standards "
-        "requested with the programming language, framework user requested ")
+                        "requested with the programming language, framework user requested ")
     ]
 
     # @out
     files_created: Annotated[
-        list[str], 
+        list[str],
         State.out_field("The absolute paths of file that were created for this project "
-        "so far.")
+                        "so far.")
     ]
 
     # @out
     infile_license_comments: Annotated[
         dict[str, str],
-        State.out_field("A list of multiline license comments for each type of file.")
+        State.out_field(
+            "A list of multiline license comments for each type of file.")
     ]
 
     # @out
-    commands_to_execute: Annotated[ 
+    commands_to_execute: Annotated[
         dict[str, str],
         State.out_field("This field represents a dictionary of commands intended to be "
-        "executed on a Linux terminal. Each key-value pair in the dictionary corresponds to an absolute path (the key) and a specific command (the value) to be executed at that path.")
+                        "executed on a Linux terminal. Each key-value pair in the dictionary corresponds to an absolute path (the key) and a specific command (the value) to be executed at that path.")
     ]
 
     # @in

@@ -24,9 +24,9 @@ from utils.logs.logging_utils import logger
 class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
     """
     """
-    
+
     def __init__(self, llm: ChatOpenAI):
-        
+
         super().__init__(
             ProjectAgents.planner.agent_id,
             ProjectAgents.planner.agent_name,
@@ -37,13 +37,13 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
 
         # backlog planner for each deliverable chain
         self.backlog_plan = self.prompts.backlog_planner_prompt | self.llm
-        
+
         # detailed requirements generator chain
         self.detailed_requirements = self.prompts.detailed_requirements_prompt | self.llm
 
-        self.segregaion_chain= SegregatorPrompts.segregation_prompt| self.llm | JsonOutputParser()
+        self.segregaion_chain = SegregatorPrompts.segregation_prompt | self.llm | JsonOutputParser()
 
-        self.current_task : Task = None
+        self.current_task: Task = None
 
         self.error_count = 0
         self.max_retries = 3
@@ -86,14 +86,16 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
                 try:
                     with codecs.open(file_path, 'w', encoding='utf-8-sig') as file:
                         json.dump(work_package, file, indent=4)
-                    logger.info("Workpackage written to: %s (with BOM)", file_path)
+                    logger.info(
+                        "Workpackage written to: %s (with BOM)", file_path)
                     self.file_count += 1
                     session_file_count += 1
                 except Exception as e:
-                    logger.error("Unable to write workpackage to filepath: %s. Error: %s", file_path, str(e))
+                    logger.error(
+                        "Unable to write workpackage to filepath: %s. Error: %s", file_path, str(e))
 
         return session_file_count, self.file_count
-    
+
     def new_deliverable_check(self, state: PlannerState):
         # self.current_task = {x:config['configurable'][x] for x in ['description','task_status','additional_info','question']}
         # self.current_task = state.new_task
@@ -104,7 +106,7 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
             return "requirements_developer"
 
     def backlog_planner(self, state: PlannerState):
-        while(True):
+        while (True):
             try:
                 logger.info("----Working on building backlogs for the deliverable----")
                 logger.info("Deliverable: %s", state['current_task'].description)
@@ -117,7 +119,8 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
 
                 if generated_backlogs.content.startswith('```json') and generated_backlogs.content.endswith('```'):
                     # Remove the ```json prefix and ``` suffix
-                    cleaned_generated_backlogs = generated_backlogs.content.removeprefix('```json').removesuffix('```').strip()
+                    cleaned_generated_backlogs = generated_backlogs.content.removeprefix(
+                        '```json').removesuffix('```').strip()
                 else:
                     cleaned_generated_backlogs = generated_backlogs.content
 
@@ -125,7 +128,7 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
                 
                 # Validate the response using Pydantic
                 validated_backlogs = BacklogList(backlogs=backlogs_list)
-                
+
                 self.error_count = 0
                 self.error_messages = []
 
@@ -143,17 +146,17 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
                 
                 logger.error(error_message)
                 self.error_messages.append(error_message)
-                
+
                 if self.error_count >= self.max_retries:
                     logger.info("Max retries reached. Halting")
                     self.error_count = 0
                     return state
 
-    def requirements_developer(self, state: PlannerState):        
+    def requirements_developer(self, state: PlannerState):
         state['planned_task_requirements'] = {}
         ptm = {}
         for backlog in state['planned_task_map'][state['current_task'].description]:
-            while(True):
+            while (True):
                 try:
                     logger.info("----Now Working on Generating detailed requirements for the backlog----")
                     logger.info("Backlog: %s", backlog)
@@ -171,11 +174,12 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
                     # cleaned_response = re.sub(r'//.*$', '', cleaned_response, flags=re.MULTILINE)
                     # Remove multi-line comments
                     # cleaned_response = re.sub(r'/\*.*?\*/', '', cleaned_response, flags=re.DOTALL)
-                    
+
                     # Check if the text starts with ```json and ends with ```
                     if cleaned_response.startswith('```json') and cleaned_response.endswith('```'):
                         # Remove the ```json prefix and ``` suffix
-                        cleaned_json = cleaned_response.removeprefix('```json').removesuffix('```').strip()
+                        cleaned_json = cleaned_response.removeprefix(
+                            '```json').removesuffix('```').strip()
                     else:
                         # If not enclosed in code blocks, use the text as is
                         cleaned_json = cleaned_response
@@ -212,7 +216,7 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
                     logger.info("Error Message fed back to LLM: %s", error_message)
                     
                     self.error_messages.append(error_message)
-                    
+
                     if self.error_count >= self.max_retries:
                         logger.info("Max retries reached. Halting")
                         self.error_count = 0
@@ -248,36 +252,39 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
 
         # Split the response into lines
         lines = response.split('\n')
-        
+
         # Extract tasks using regex
         tasks = []
         for line in lines:
             # Match lines that start with numbers or bullet points
-            match = re.match(r'^(\d+\.|\*|\-)\s*\*{0,2}([^:]+)(:|\*{0,2})', line.strip())
+            match = re.match(
+                r'^(\d+\.|\*|\-)\s*\*{0,2}([^:]+)(:|\*{0,2})', line.strip())
             if match:
                 task = match.group(2).strip()
                 tasks.append(task)
-        
+
         return tasks
-    
-    def task_segregation(self, workpackage_name:str, requirements:str) -> bool:
+
+    def task_segregation(self, workpackage_name: str, requirements: str) -> bool:
         """
         """
         logger.info(f"---- Initiating segregation ----")
 
         try:
             llm_response = self.segregaion_chain.invoke({
-                "work_package": workpackage_name +"/n" + str(requirements)
+                "work_package": workpackage_name + "/n" + str(requirements)
             })
 
             self.hasError = False
             self.error_message = ""
             required_keys = ["taskType"]
-            missing_keys = [key for key in required_keys if key not in llm_response]
+            missing_keys = [
+                key for key in required_keys if key not in llm_response]
 
             if missing_keys:
-                raise KeyError(f"Missing keys: {missing_keys} in the response. Try Again!")
-            
+                raise KeyError(
+                    f"Missing keys: {missing_keys} in the response. Try Again!")
+
             # Checking if the segregation agent generated tasktype
 
             logger.info(f" task type  : {llm_response['taskType']} ; {llm_response['reason_for_classification']}")
@@ -286,5 +293,5 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
 
             self.hasError = True
             self.error_message = f"An error occurred while processing the request: {str(e)}"
-        
+
         return llm_response['taskType']
