@@ -28,20 +28,19 @@ class GraphInfo:
 @dataclass
 class AgentInfo:
     """
-    Class that holds information about an agent.
+   Class that holds information about an agent.
 
     Attributes:
         agent_name (str): The name of the agent.
         agent_id (str): The unique identifier of the agent.
-        alias (str): The alias of the agent.
-        description (str): The description of the agent.
+        alias (Optional[str]): An optional alias for the agent.
+        description (Optional[str]): An optional description of the agent.
     """
 
     agent_name: str
     agent_id: str
-    alias: str
-    description: str
-
+    alias: str = ""
+    description: str = ""
 
 class LLMConfig:
     """
@@ -141,16 +140,18 @@ class ProjectGraphs(Enum):
         coder (GraphInfo): Information about the Software Engineer Graph.
         rag (GraphInfo): Information about the Standards Extractor Graph.
         planner (GraphInfo): Information about the Project Planner Graph.
-        tester (GraphInfo): Information about the Unit Tester Graph.
-        modernizer (GraphInfo): Information about the AST Generator Graph.
+        tests_generator (GraphInfo): Information about the Unit Tester Graph.
+        modernizer (GraphInfo): Information about the Knowledge Graph Generator Graph.
+        reviewer (GraphInfo): Information about the Code Reviewer Graph.
     """
-    supervisor = GraphInfo("Supervisor Graph", "GRPH_01_SUP")
+    supervisor = GraphInfo("Project Supervisor Graph", "GRPH_01_SUP")
     architect = GraphInfo("Solution Architect Graph", "GRPH_02_ARC")
     coder = GraphInfo("Software Engineer Graph", "GRPH_03_ENG")
-    rag = GraphInfo("Standards Extractor Graph", "GRPH_04_RAG")
+    rag = GraphInfo("Document Repository Manager Graph", "GRPH_04_RAG")
     planner = GraphInfo("Project Planner Graph", "GRPH_05_PLN")
-    tester = GraphInfo("Unit Tester Graph", "GRPH_06_TST")
-    modernizer = GraphInfo("AST Generator Graph", "GRPH_07_MOD")
+    tests_generator = GraphInfo("Unit Tester Graph", "GRPH_06_TST")
+    modernizer = GraphInfo("Knowledge Graph Generator Graph", "GRPH_07_MOD")
+    reviewer = GraphInfo("Code Reviewer Graph", "GRPH_08_REV")
 
     @property
     def graph_name(self) -> str:
@@ -183,73 +184,74 @@ class ProjectAgents(Enum):
         coder (AgentInfo): Information about the Software Engineer agent.
         rag (AgentInfo): Information about the Standards Extractor agent.
         planner (AgentInfo): Information about the Project Planner agent.
-        tester (AgentInfo): Information about the Unit Tester agent.
-        modernizer (AgentInfo): Information about the AST Generator agent.
+        tests_generator (AgentInfo): Information about the Unit Tester agent.
+        modernizer (AgentInfo): Information about the Knowledge graph Generator agent.
         human (AgentInfo): Information about the Human In The Loop agent.
+        reviwer (AgentInfo): Information about the code reviewing agent
     """
 
     supervisor = AgentInfo(
-        "Project Supervisor",
+        "Project Supervisor", 
         "SUP_01",
         alias="supervisor",
         description="Coordinates with the team, assigns tasks, and guides the team toward successful project completion."
     )
 
     architect = AgentInfo(
-        "Solution Architect",
+        "Solution Architect", 
         "ARC_02",
         alias="architect",
         description="Defines the project requirements and outlines the architectural framework."
     )
 
     coder = AgentInfo(
-        "Software Engineer",
+        "Software Engineer", 
         "ENG_03",
         alias="coder",
         description="Develops and writes code to the tasks assigned."
     )
 
     rag = AgentInfo(
-        "Document Repository Manager",
+        "Document Repository Manager", 
         "RAG_04",
         alias="rag",
         description="Oversees the vector database, manages document and file storage, and provides relevant information in response to queries."
     )
 
     planner = AgentInfo(
-        "Project Planner",
+        "Project Planner", 
         "PLN_05",
         alias="planner",
         description="Creates detailed plans for task execution, based on requirements provided."
     )
 
-    tester = AgentInfo(
-        "Unit Tester",
+    tests_generator = AgentInfo(
+        "Unit Tester", 
         "TST_06",
         alias="tests_generator",
         description="Develops and executes unit test cases to ensure code quality and functionality."
     )
 
     modernizer = AgentInfo(
-        "Knowledge Graph Generator",
+        "Knowledge Graph Generator", 
         "MOD_07",
         alias="modernizer",
         description="Generates and maintains the knowledge graph for the project, facilitating data relationships and insights."
     )
 
     human = AgentInfo(
-        "Human Intervention Specialist",
+        "Human Intervention Specialist", 
         "HUM_08",
         alias="human",
         description="Provides assistance and oversight when automated systems encounter issues or produce unreliable results."
     )
 
-    # reviewer = AgentInfo(
-    #     "Code Reviewer",
-    #     "REV_09",
-    #     alias="reviwer",
-    #     description="Responsible for evaluating code quality and ensuring adherence to coding standards. This includes reviewing code for clean code principles, naming conventions, and compliance with both internal and external standards."
-    # )
+    reviewer = AgentInfo(
+        "Code Reviewer",
+        "REV_09",
+        alias="reviwer",
+        description="Responsible for evaluating code quality and ensuring adherence to coding standards. This includes reviewing code for clean code principles, naming conventions, and compliance with both internal and external standards."
+    )
 
     @property
     def agent_name(self) -> str:
@@ -270,7 +272,7 @@ class ProjectAgents(Enum):
             str: The unique identifier of the agent.
         """
         return self.value.agent_id
-
+    
     @property
     def alias(self) -> str:
         """
@@ -290,8 +292,7 @@ class ProjectAgents(Enum):
             Optional[str]: The description of the agent, or None if not set.
         """
         return self.value.description
-
-
+    
 AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.supervisor.agent_id: AgentConfig(
         ProjectAgents.supervisor.agent_name,
@@ -369,7 +370,7 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
             temperature=0.3,
             max_retries=5,
             streaming=True,
-            model_kwargs={"seed": 4000, "top_p": 0.6}
+            model_kwargs={"seed": 4000, "top_p": 0.4}
         )
     ),
     ProjectAgents.modernizer.agent_id: AgentConfig(
@@ -396,6 +397,17 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
             max_retries=5,
             streaming=True,
             model_kwargs={"seed": 4000, "top_p": 0.6}
+        )
+    ),
+    ProjectAgents.reviewer.agent_id: AgentConfig(
+        ProjectAgents.reviewer.agent_name,
+        ProjectAgents.reviewer.agent_id,
+        LLMConfig(
+            model="gpt-4o-2024-05-13",
+            temperature=0.3,
+            max_retries=5,
+            streaming=True,
+            model_kwargs={"seed": 4000, "top_p": 0.2}
         )
     )
 }

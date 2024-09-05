@@ -38,7 +38,7 @@ class ChatRoles(Enum):
           str: The value of the Enum member.
       """
       return self.value
-
+    
 class Status(Enum):
     """
     An enumeration representing the various states a task or project can be in.
@@ -52,6 +52,8 @@ class Status(Enum):
         NEW (str): Represents the initial state of a task or project.
         AWAITING (str): Represents the state when a task or project is waiting
           for some event or dependency.
+        RESPONDED (str): Indicates that the task or project was previously in 
+          the 'AWAITING' state and has now received the necessary response.
         INPROGRESS (str): Represents the state when a task or project is 
           currently being worked on.
         ABANDONED (str): Represents the state when a task or project has been 
@@ -62,6 +64,7 @@ class Status(Enum):
     NONE: str = "NONE"
     NEW: str = "NEW"
     AWAITING: str = "AWAITING"
+    RESPONDED: str = "RESPONDED"
     INPROGRESS: str = "INPROGRESS"
     ABANDONED: str = "ABANDONED"
     DONE: str = "DONE"
@@ -75,31 +78,40 @@ class Status(Enum):
       """
       return self.value
 
-
 class PStatus(Enum):
     """
     An enumeration representing the various states a project can be in.
 
     This class is used to track the progress of a project. The states
-    include 'NEW', 'INITIAL', 'EXECUTING', 'MONITORING', and 'HALTED'. These
-    states help in identifying the current status of a task or project.
+    include 'RECEIVED', 'NEW', 'INITIAL', 'EXECUTING', 'MONITORING', 
+    'HALTED', and 'DONE'. These states help in identifying the current 
+    status of a project or task.
 
     Attributes:
-        NEW (str): Represents the Pre-init state of a project.
-        INITIAL (str): Represents the inital state when a project is waiting
-          for the setup to be completed.
-        EXECUTING (str): Represents the state of the project when a task is
+        NONE (str): Initial state indicating no status has been assigned yet.
+        RECEIVED (str): Indicates that the project has been received but has 
+          not yet been assigned a specific status.
+        NEW (str): Represents the pre-initiation state of a project.
+        INITIAL (str): Represents the initial state when a project is waiting 
+          for setup to be completed.
+        EXECUTING (str): Represents the state of the project when a task is 
           currently being worked on.
-        MONITORING (str): Represents the state of the project when an issue as
-          arised while executing a task.
-        HALTED (str): Represents the final state of the project when all tasks
-          have been completed or something could not be resolved so, use this to loop in HUMAN.
+        MONITORING (str): Represents the state of the project when issues 
+          have arisen during task execution.
+        HALTED (str): Represents the state when all tasks have been completed 
+          or when an unresolved issue requires human intervention.
+        DONE (str): Represents the state when all user-requested requirements 
+          have been fulfilled.
     """
+
+    NONE: str = "NONE"
+    RECEIVED: str = "RECEIVED"
     NEW: str = "NEW"
     INITIAL: str = "INITIAL"
     EXECUTING: str = "EXECUTING"
     MONITORING: str = "MONITORING"
     HALTED: str = "HALTED"
+    DONE: str = "DONE"
 
     def __str__(self):
       """

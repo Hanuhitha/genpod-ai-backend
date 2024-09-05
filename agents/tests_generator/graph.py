@@ -2,30 +2,33 @@
 TestCoder Graph
 """
 
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
-from langgraph.graph.graph import CompiledGraph
 
-from agents.tester.agent import TestCoderAgent
-from agents.tester.state import TestCoderState
+from agents.agent.graph import Graph
+from agents.tests_generator.agent import TestCoderAgent
+from agents.tests_generator.state import TestCoderState
+from configs.project_config import ProjectGraphs
 
-class TestCoderGraph:
+
+class TestCoderGraph(Graph[TestCoderAgent]):
     """
     """
 
-    state: TestCoderState
-    agent: TestCoderAgent
-    memory: SqliteSaver
-    app: CompiledGraph
+    def __init__(self, llm: ChatOpenAI, persistance_db_path: str) -> None:
+        """
+        """
 
-    def __init__(self, llm) -> None:
+        super().__init__(
+            ProjectGraphs.tests_generator.graph_id,
+            ProjectGraphs.tests_generator.graph_name,
+            TestCoderAgent(llm),
+            persistance_db_path
+        )
 
-        self.state = TestCoderState()
-        self.agent = TestCoderAgent(llm)
-        # self.memory = SqliteSaver.from_conn_string(PERSISTANCE_DB_PATH)
-        self.app = self.define_graph()
-    
-    def define_graph(self) -> CompiledGraph:
+        self.compile_graph_with_persistence()
+
+    def define_graph(self) -> StateGraph:
 
         unit_test_coder_flow = StateGraph(TestCoderState)
 
@@ -65,7 +68,6 @@ class TestCoderGraph:
             }
         )
 
-
         unit_test_coder_flow.add_conditional_edges(
             self.agent.test_code_generation_node_name,
             self.agent.router,
@@ -100,12 +102,14 @@ class TestCoderGraph:
         # entry point
         unit_test_coder_flow.set_entry_point(self.agent.entry_node_name)
 
-        return unit_test_coder_flow.compile()
-    
+        return unit_test_coder_flow
 
     def get_current_state(self) -> TestCoderState:
         """
-        returns the current state of the graph.
+        Method to fetch the current state of the graph.
+
+        Returns:
+            ArchitectState: The current state of the Architect agent.
         """
         
         return self.agent.state

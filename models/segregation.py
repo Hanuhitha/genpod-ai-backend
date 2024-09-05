@@ -1,7 +1,5 @@
-from typing_extensions import ClassVar
+from pydantic import BaseModel, Field
 
-from pydantic import Field
-from pydantic import BaseModel
 
 class Segregation(BaseModel):
     """

@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any, Dict
 
 from database.tables.table import Table
-from models.constants import PStatus
 from utils.logs.logging_utils import logger
 
 
@@ -17,7 +16,7 @@ class Projects(Table):
     id: int # unique identifier of the record
     project_name: str # name of the project
     input_prompt: str # input prompt used for the project
-    status: PStatus # status of the project generation
+    status: str # status of the project generation
     license_text: str # user given license text for the project
     license_file_url: str # user given license file url
     project_location: str # path where project is located
@@ -74,14 +73,14 @@ class Projects(Table):
             if cursor:
                 cursor.close()
     
-    def insert(self, project_name: str, input_prompt: str, project_location: str, user_id: int, license_text: str="", license_file_url: str="") -> Dict[str, Any]:
+    def insert(self, project_name: str, input_prompt: str, status: str, project_location: str, user_id: int, license_text: str="", license_file_url: str="") -> Dict[str, Any]:
         """
         """
 
         return super().insert(
             project_name=project_name,
             input_prompt=input_prompt,
-            status=PStatus.NEW.value,
+            status=status,
             project_location=project_location,
             license_text=license_text,
             license_file_url=license_file_url,

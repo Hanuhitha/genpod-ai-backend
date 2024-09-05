@@ -21,7 +21,6 @@ class PlannerWorkFlow(Graph[PlannerAgent]):
 
     def define_graph(self) -> StateGraph:
         
-        # self.new_task : Task = None
         planner_workflow = StateGraph(PlannerState, config_schema=Task)
         # Define the nodes
         # self.planner_workflow.add_node("new_deliverable_check", self.agent.new_deliverable_check)

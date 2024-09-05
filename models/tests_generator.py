@@ -6,7 +6,11 @@ the TestGenerator agent includes information about the steps to complete a task,
 the files to be created, the location of the code, the actual code.
 """
 
+from typing import Any
+
 from pydantic import BaseModel, Field
+
+from models.skeleton import FunctionSkeletonFields
 
 
 class ToolCall(BaseModel):
@@ -27,7 +31,7 @@ class ToolCall(BaseModel):
 class TestCodeGeneration(BaseModel):
     """
     """
-    
+
     files_to_create: list[str] = Field(
         description="""
         A list of absolute file paths that need to be created as part of the current task
@@ -43,6 +47,7 @@ class TestCodeGeneration(BaseModel):
             'absolute_file_pathN'
         ]        
         """, 
+        default=[],
         required=True
     )
 
@@ -53,6 +58,7 @@ class TestCodeGeneration(BaseModel):
         unit test code for that particular file. The code should adhere to all the requirements and standards 
         provided.
         """, 
+        default={},
         required=True
     )
 
@@ -68,6 +74,7 @@ class TestCodeGeneration(BaseModel):
             }
         "
         """,
+        default={},
         required=True
     )
 
@@ -82,6 +89,34 @@ class TestCodeGeneration(BaseModel):
 
         Please ensure that the commands and their parameters are correctly formatted to prevent any execution errors.
         """,
+        default={},
         required=True
     )
+
+    functions_skeleton: dict[str, FunctionSkeletonFields] = Field(
+        description="""
+        A dictionary where each key-value pair represents a file and its corresponding function skeleton. The key 
+        should be the absolute path to the file, and the value should be the well-descriptive function skeleton
+        for that particular file.
+        """, 
+        default={},
+        required=True
+    )
+
+    def __getitem__(self, key: str) -> Any:
+        """
+        Allows getting attributes using square bracket notation.
+        """
+        if hasattr(self, key):
+            return getattr(self, key)
+        raise KeyError(f"Key '{key}' not found in TestCodeGeneration.")
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        """
+        Allows setting attributes using square bracket notation.
+        """
+        if hasattr(self, key):
+            setattr(self, key, value)
+        else:
+            raise KeyError(f"Key '{key}' not found in TestCodeGeneration.")
 

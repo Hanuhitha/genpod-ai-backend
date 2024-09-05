@@ -4,7 +4,10 @@ from typing import List
 from typing_extensions import Annotated, TypedDict
 
 from agents.agent.state import State
-from models.models import RequirementsDocument, Task
+from models.constants import ChatRoles, PStatus
+from models.models import (PlannedTask, PlannedTaskQueue, RequirementsDocument,
+                           Task, TaskQueue)
+from models.skeleton import FunctionSkeleton
 
 
 class SupervisorState(TypedDict):
@@ -35,7 +38,7 @@ class SupervisorState(TypedDict):
 
     # @out
     project_status: Annotated[
-        str,
+        PStatus,
         State.out_field("The status of the project being generated.")
     ]
 
@@ -77,14 +80,20 @@ class SupervisorState(TypedDict):
 
     # @out
     tasks: Annotated[
-        List[Task], 
+        TaskQueue, 
         State.out_field("The tasks create while generating the project.")
     ]
 
     # @out
     current_task: Annotated[
         Task,
-        State.out_field("The current task that is team is working on.")
+        State.out_field("The current task that team is working on.")
+    ]
+
+    # @out
+    current_planned_task: Annotated[
+        PlannedTask,
+        State.out_field("The current planned task that team is working on.")
     ]
 
     # @out
@@ -99,7 +108,7 @@ class SupervisorState(TypedDict):
 
     # @inout
     messages: Annotated[
-        list[tuple[str, str]], 
+        list[tuple[ChatRoles, str]], 
         State.inout_field(
             "A chronological list of tuples representing the conversation history between the "
             "system, user, and AI. Each tuple contains a role identifier (e.g., 'AI', 'tool', "
@@ -122,7 +131,7 @@ class SupervisorState(TypedDict):
     ]
 
     # @out
-    rag_query_answer : Annotated[
+    is_rag_query_answered : Annotated[
         bool,
         State.out_field("is query answered by rag agent.")
     ]
@@ -141,7 +150,7 @@ class SupervisorState(TypedDict):
 
     # @out
     planned_tasks: Annotated[
-        List[Task], # This is list of work_packages created by the planner,
+        PlannedTaskQueue, # This is list of work_packages created by the planner,
         State.out_field()
     ]
 
@@ -191,10 +200,24 @@ class SupervisorState(TypedDict):
         "executed on a Linux terminal. Each key-value pair in the dictionary corresponds to an absolute path (the key) and a specific command (the value) to be executed at that path.")
     ]
 
-    # TODO: remove this once agent requirements logic is implemented
-    coder_inputs: dict
+    # @in
+    functions_skeleton:Annotated[
+        FunctionSkeleton,
+        State.in_field(
+            "The well detailed function skeleton for the functions that are in the code."
+        )
+    ]
+
+    # @in
+    test_code: Annotated[
+        str, 
+        State.in_field(
+            "The complete, well-documented working unit test code that adheres to all standards "
+            "requested with the programming language, framework user requested "
+        )
+    ]
     
-def add_message(state: SupervisorState, message: tuple[str, str]) -> SupervisorState:
+def add_message(state: SupervisorState, message: tuple[ChatRoles, str]) -> SupervisorState:
     """
     Adds a single message to the messages field in the state.
 
@@ -208,4 +231,4 @@ def add_message(state: SupervisorState, message: tuple[str, str]) -> SupervisorS
     """
 
     state['messages'] += [message]
-    return {**state}
+    return state

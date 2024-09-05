@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any, Dict
 
 from database.tables.table import Table
-from models.constants import Status
 from utils.logs.logging_utils import logger
 
 
@@ -17,7 +16,7 @@ class Microservices(Table):
     id: int # unique identifier of the record
     microservice_name: str # name of the microservice
     project_id: int # id of the project to which this microservice belongs to
-    status: Status # status of this microservice generation
+    status: str # status of this microservice generation
     created_at: datetime # timestamp of when record is created
     updated_at: datetime # timestamp of the records last update
     created_by: int # user id of who created the record
@@ -68,14 +67,14 @@ class Microservices(Table):
             if cursor:
                 cursor.close()
         
-    def insert(self, microservice_name: str, project_id: str, user_id: str) -> Dict[str, Any]:
+    def insert(self, microservice_name: str, project_id: str, status: str, user_id: str) -> Dict[str, Any]:
         """
         """
 
         return super().insert(
             microservice_name=microservice_name,
             project_id=project_id,
-            status=Status.NEW.value,
+            status=status,
             created_by=user_id,
             updated_by=user_id
         )

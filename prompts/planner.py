@@ -55,9 +55,7 @@ class PlannerPrompts():
                 ]
             }},
             "framework": "Framework to be used"
-            }},
-            "LICENSE_URL": "<URL to the license file as it is from the input>",
-            "LICENSE_TEXT": "<Text of the license as it is from the input>"
+            }}
         }}
 
         - If you need more information, respond with a JSON object containing a single detailed question that can be used to retrieve additional information from RAG or can be asked to the Architect of the project:

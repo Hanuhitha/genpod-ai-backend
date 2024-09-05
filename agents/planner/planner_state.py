@@ -49,7 +49,7 @@ class PlannerState(TypedDict):
 
     # @out
     planned_task_map: Annotated[
-        Dict[str, List[str]],
+        Dict[str, Dict[str, bool]],
         State.out_field()
     ]
 

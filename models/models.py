@@ -6,7 +6,7 @@ capturing a specific set of information required for the project. These models
 are used to structure the data in a consistent and organized manner, enhancing 
 the readability and maintainability of the code.
 """
-from typing import Any
+from typing import Any, List
 
 from pydantic import BaseModel, Field
 
@@ -24,15 +24,15 @@ class Task(BaseModel):
         default_factory=generate_task_id
     )
 
-    description: str = Field(
-        description="A brief description outlining the objective of the task",
-        default="",
-        required=True
-    )
-
     task_status: Status = Field(
         description="The current status indicating the progress of the task",
         default= Status.NONE,
+        required=True
+    )
+
+    description: str = Field(
+        description="A brief description outlining the objective of the task",
+        default="",
         required=True
     )
 
@@ -51,6 +51,46 @@ class Task(BaseModel):
         description="A field for notes on the task's status. If the task is "
         "abandoned, state the reason here.",
         default=""
+    )
+
+class PlannedTask(BaseModel):
+    """
+    A data model representing a task and its current state within a project
+    or workflow.
+    """
+    task_id: str = Field(
+        description="A unique task id to track and access current task and previous tasks",
+        default_factory=generate_task_id
+    )
+
+    task_status: Status = Field(
+        description="The current status indicating the progress of the task",
+        default= Status.NONE,
+        required=True
+    )
+
+    # if this is True then test code has to be generated first
+    # then code has to be generated.
+    is_function_generation_required: bool = Field(
+        description="whether the current task involves writing code.",
+        default=False,
+        required=True
+    )
+
+    is_test_code_generated: bool = Field(
+        description="unit test cases generated or not for this task",
+        default=False,
+    )
+
+    is_code_generate: bool = Field(
+        description="funtional code is generated or not",
+        default=False
+    )
+
+    description: str = Field(
+        description="A brief description outlining the objective of the task",
+        default="",
+        required=True
     )
 
 class RequirementsDocument(BaseModel):
@@ -150,3 +190,145 @@ class RequirementsDocument(BaseModel):
             setattr(self, key, value)
         else:
             raise KeyError(f"Key '{key}' not found in RequirementsDocument.")
+
+class TaskQueue(BaseModel):
+    """
+    A class to manage a queue of tasks with an index to keep track of the next task to process.
+    """
+    
+    next: int = Field(
+        description="index of next field",
+        default=0
+    )
+
+    queue: List[Task] = Field(
+        description="list of tasks",
+        default=[]
+    )
+
+    def add_task(self, t: Task) -> None:
+        """
+        Adds a new task to the end of the queue.
+        
+        Args:
+            t (Task): The Task object to be added.
+        """
+        self.queue.append(t)
+
+    def add_tasks(self, tasks: List[Task]) -> None:
+        """
+        Adds a list of tasks to the end of the queue.
+        
+        Args:
+            tasks (List[Task]): A list of Task objects to be added.
+        """
+        self.queue.extend(tasks)
+
+    def get_next_task(self) -> Task:
+        """
+        Retrieves and advances to the next task in the queue.
+        
+        Returns:
+            Task: The next Task object, or None if no tasks are left.
+        """
+        if self.next < len(self.queue):
+            task = self.queue[self.next]
+            self.next += 1
+            return task
+        return None
+
+    def update_task(self, updated_task: Task) -> None:
+        """
+        Updates an existing task in the queue with the new values from the updated_task.
+
+        Args:
+            updated_task (Task): The updated Task object with new values.
+        
+        Raises:
+            ValueError: If the task to be updated is not found in the queue.
+        """
+        for i, task in enumerate(self.queue):
+            if task.task_id == updated_task.task_id:
+                self.queue[i] = updated_task
+                return
+        raise ValueError(f"Task with ID {updated_task.task_id} not found in the queue.")
+
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the TaskQueue.
+        
+        Returns:
+            str: A string representing the current tasks and the index of the next task.
+        """
+        return f"Tasks: {self.queue}, Next Index: {self.next}"
+
+class PlannedTaskQueue(BaseModel):
+    """
+    A class to manage a queue of tasks with an index to keep track of the next task to process.
+    """
+    
+    next: int = Field(
+        description="index of next field",
+        default=0
+    )
+
+    queue: List[PlannedTask] = Field(
+        description="list of planned tasks",
+        default=[]
+    )
+
+    def add_task(self, t: PlannedTask) -> None:
+        """
+        Adds a new task to the end of the queue.
+        
+        Args:
+            t (Task): The Task object to be added.
+        """
+        self.queue.append(t)
+
+    def add_tasks(self, tasks: List[PlannedTask]) -> None:
+        """
+        Adds a list of tasks to the end of the queue.
+        
+        Args:
+            tasks (List[Task]): A list of Task objects to be added.
+        """
+        self.queue.extend(tasks)
+
+    def get_next_task(self) -> PlannedTask:
+        """
+        Retrieves and advances to the next task in the queue.
+        
+        Returns:
+            Task: The next Task object, or None if no tasks are left.
+        """
+        if self.next < len(self.queue):
+            task = self.queue[self.next]
+            self.next += 1
+            return task
+        return None
+
+    def update_task(self, updated_task: PlannedTask) -> None:
+        """
+        Updates an existing task in the queue with the new values from the updated_task.
+
+        Args:
+            updated_task (Task): The updated Task object with new values.
+        
+        Raises:
+            ValueError: If the task to be updated is not found in the queue.
+        """
+        for i, task in enumerate(self.queue):
+            if task.task_id == updated_task.task_id:
+                self.queue[i] = updated_task
+                return
+        raise ValueError(f"Task with ID {updated_task.task_id} not found in the queue.")
+
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the TaskQueue.
+        
+        Returns:
+            str: A string representing the current tasks and the index of the next task.
+        """
+        return f"Tasks: {self.queue}, Next Index: {self.next}"

@@ -1,7 +1,8 @@
-"""Coder State
+"""TestCoder State
 
 Agent graph state
 """
+
 from typing_extensions import Annotated, TypedDict
 
 from agents.agent.state import State
@@ -10,7 +11,7 @@ from models.models import PlannedTask, Task
 from models.skeleton import FunctionSkeleton
 
 
-class CoderState(TypedDict):
+class TestCoderState(TypedDict):
     """
     """
 
@@ -58,25 +59,8 @@ class CoderState(TypedDict):
 
     # @in
     license_text: Annotated[
-        str, 
+        str,
         State.in_field()
-    ]
-
-    # @in
-    functions_skeleton:Annotated[
-        FunctionSkeleton,
-        State.in_field(
-            "The well detailed function skeleton for the functions that are in the code."
-        )
-    ]
-
-    # @in
-    test_code: Annotated[
-        str, 
-        State.in_field(
-            "The complete, well-documented working unit test code that adheres to all standards "
-            "requested with the programming language, framework user requested "
-        )
     ]
 
     # @inout
@@ -87,7 +71,7 @@ class CoderState(TypedDict):
             "members are working on."
         )
     ]
-    
+        
     # @inout
     current_planned_task: Annotated[
         PlannedTask,
@@ -99,7 +83,7 @@ class CoderState(TypedDict):
     
     # @inout
     messages: Annotated[
-        list[tuple[ChatRoles, str]], 
+        list[tuple[ChatRoles, str]],
         State.inout_field(
             "A chronological list of tuples representing the conversation history between the "
             "system, user, and AI. Each tuple contains a role identifier (e.g., 'AI', 'tool', "
@@ -108,17 +92,17 @@ class CoderState(TypedDict):
     ]
 
     # @out
-    code: Annotated[
-        str, 
+    test_code: Annotated[
+        str,
         State.out_field(
-            "The complete, well-documented working code that adheres to all standards "
-            "requested with the programming language, framework user requested "
+            "The complete, well-documented working unit test code that adheres to all standards "
+            "requested with the programming language, framework user requested ",
         )
     ]
 
     # @out
     files_created: Annotated[
-        list[str], 
+        list[str],
         State.out_field(
             "The absolute paths of file that were created for this project "
             "so far."
@@ -134,10 +118,25 @@ class CoderState(TypedDict):
     ]
 
     # @out
+    functions_skeleton:Annotated[
+        FunctionSkeleton,
+        State.out_field(
+            "The well detailed function skeleton for the functions that are in the code."
+        )
+    ]
+
+    # @out
     commands_to_execute: Annotated[ 
         dict[str, str],
         State.out_field(
-            "This field represents a dictionary of commands intended to be "
-            "executed on a Linux terminal. Each key-value pair in the dictionary corresponds to an absolute path (the key) and a specific command (the value) to be executed at that path."
+            "This field represents a dictionary of commands intended to be executed on a Linux terminal. Each key-value pair in the dictionary corresponds to an absolute path (the key) and a specific command (the value) to be executed at that path."
+        )
+    ]
+
+    # @in
+    work_package:Annotated[
+        str,
+        State.in_field(
+            "This contains the work package that needs to be segregated"
         )
     ]

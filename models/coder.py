@@ -5,9 +5,10 @@ The Coder agent is responsible for completing tasks in a project. The output of
 the Coder agent includes information about the steps to complete a task, 
 the files to be created, the location of the code, the actual code.
 """
+from typing import Any, Dict
+
 from pydantic import BaseModel, Field
 from typing_extensions import ClassVar
-from typing import Dict, Any
 
 
 class ToolCall(BaseModel):
