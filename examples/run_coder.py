@@ -3,7 +3,7 @@ import json
 import time
 from pprint import pprint
 
-from agents.tester.graph import TestCoderGraph
+from agents.tests_generator.graph import TestCoderGraph
 from dotenv import load_dotenv
 from langchain_ollama import OllamaLLM
 from langchain_openai import ChatOpenAI
@@ -12,12 +12,13 @@ from models.models import Status, Task
 
 load_dotenv()
 
-if __name__=="__main__":
+if __name__ == "__main__":
     #  Example using in you main graph.
 
-    llm = ChatOpenAI(model="gpt-4o-2024-05-13", temperature=0, max_retries=5, streaming=True, seed=4000)
-    Coder= TestCoderGraph(llm)
-    init_task = Task(task_id='1721664384819-0692c177-61a5-44d2-8cac-b83f51a827df',description='''"work_package_name": "Implement GET Title Endpoint",
+    llm = ChatOpenAI(model="gpt-4o-2024-05-13", temperature=0,
+                     max_retries=5, streaming=True, seed=4000)
+    Coder = TestCoderGraph(llm)
+    init_task = Task(task_id='1721664384819-0692c177-61a5-44d2-8cac-b83f51a827df', description='''"work_package_name": "Implement GET Title Endpoint",
     "description": "Implement a GET Title Endpoint in .NET for a Title Requests Microservice adhering to MISMO v3.6 standards.",
     "name": "Title Requests Microservice",
     "language": "C#",
@@ -113,9 +114,9 @@ if __name__=="__main__":
     },
     "LICENSE_URL": "https://opensource.org/licenses/MIT",
     "LICENSE_TEXT": "MIT License"''',
-      task_status=Status.NEW.value, additional_info='', question='', remarks='')
+                     task_status=Status.NEW.value, additional_info='', question='', remarks='')
 
-    requirements_doc="""
+    requirements_doc = """
 # Project Requirements Document
 
 ## Project Overview
@@ -843,17 +844,17 @@ This project should use the following license:
 ```
 This code base copyrights belong to XYZ
 ```"""
-    inputqh= {"generated_project_path": "/home/pranay/Desktop/Generatedfiles/latest/2024-07-29_11-02-38-752576",
-            "license_text": "This code base copyrights belong to XYZ",
-            "license_url": "https://raw.githubusercontent.com/intelops/tarian-detector/8a4ff75fe31c4ffcef2db077e67a36a067f1437b/LICENSE",
-            "project_name": "TitleRequestsMicroservice",
-            "project_folder_structure": "## Folder Structure\n\n```plaintext\nTitleRequestsMicroservice/\n├── src/\n│   ├── TitleRequests.Api/\n│   │   ├── Controllers/\n│   │   ├── Models/\n│   │   ├── Services/\n│   │   ├── DataAccess/\n│   │   ├── Migrations/\n│   │   ├── Program.cs\n│   │   ├── Startup.cs\n│   │   └── appsettings.json\n│   ├── TitleRequests.Common/\n│   │   ├── Logging/\n│   │   ├── Monitoring/\n│   │   └── Utilities/\n│   └── TitleRequests.Tests/\n│       ├── UnitTests/\n│       ├── IntegrationTests/\n│       └── TestSettings.json\n├── docs/\n│   ├── Architecture/\n│   ├── Requirements/\n│   └── README.md\n├── scripts/\n│   ├── build.sh\n│   ├── deploy.sh\n│   └── test.sh\n├── .gitignore\n├── LICENSE\n└── README.md\n```\n\n### Explanation of the Purpose for Each Major Directory\n\n- **src/**: Contains all the source code for the microservice.\n  - **TitleRequests.Api/**: The main project directory for the Title Requests Microservice.\n    - **Controllers/**: Contains the API controllers that handle HTTP requests.\n    - **Models/**: Contains the data models such as `TitleRequest`, `TitleResponse`, and `ErrorModel`.\n    - **Services/**: Contains the business logic for processing title requests.\n    - **DataAccess/**: Contains the data access layer for interacting with the database.\n    - **Migrations/**: Contains database migration files.\n    - **Program.cs**: The entry point of the application.\n    - **Startup.cs**: Configures the application services and middleware.\n    - **appsettings.json**: Configuration file for application settings.\n  - **TitleRequests.Common/**: Contains common or shared code that can be used across multiple projects.\n    - **Logging/**: Contains logging-related utilities and configurations.\n    - **Monitoring/**: Contains monitoring-related utilities and configurations.\n    - **Utilities/**: Contains general utility classes and methods.\n  - **TitleRequests.Tests/**: Contains all test projects.\n    - **UnitTests/**: Contains unit tests for the microservice.\n    - **IntegrationTests/**: Contains integration tests for the microservice.\n    - **TestSettings.json**: Configuration file for test settings.\n- **docs/**: Contains documentation related to the project.\n  - **Architecture/**: Contains architecture-related documentation.\n  - **Requirements/**: Contains requirements-related documentation.\n  - **README.md**: The main readme file for the documentation.\n- **scripts/**: Contains scripts for building, deploying, and testing the microservice.\n  - **build.sh**: Script for building the project.\n  - **deploy.sh**: Script for deploying the project.\n  - **test.sh**: Script for running tests.\n- **.gitignore**: Specifies files and directories to be ignored by Git.\n- **LICENSE**: Contains the license information for the project.\n- **README.md**: The main readme file for the project.",
-            "requirements_overview": requirements_doc, 
-            "current_task":init_task ,
-            "additional_info":"",
-            "question":"", 
-            "remarks": "",
-            "work_package":"""{
+    inputqh = {"generated_project_path": "/home/pranay/Desktop/Generatedfiles/latest/2024-07-29_11-02-38-752576",
+               "license_text": "This code base copyrights belong to XYZ",
+               "license_url": "https://raw.githubusercontent.com/intelops/tarian-detector/8a4ff75fe31c4ffcef2db077e67a36a067f1437b/LICENSE",
+               "project_name": "TitleRequestsMicroservice",
+               "project_folder_structure": "## Folder Structure\n\n```plaintext\nTitleRequestsMicroservice/\n├── src/\n│   ├── TitleRequests.Api/\n│   │   ├── Controllers/\n│   │   ├── Models/\n│   │   ├── Services/\n│   │   ├── DataAccess/\n│   │   ├── Migrations/\n│   │   ├── Program.cs\n│   │   ├── Startup.cs\n│   │   └── appsettings.json\n│   ├── TitleRequests.Common/\n│   │   ├── Logging/\n│   │   ├── Monitoring/\n│   │   └── Utilities/\n│   └── TitleRequests.Tests/\n│       ├── UnitTests/\n│       ├── IntegrationTests/\n│       └── TestSettings.json\n├── docs/\n│   ├── Architecture/\n│   ├── Requirements/\n│   └── README.md\n├── scripts/\n│   ├── build.sh\n│   ├── deploy.sh\n│   └── test.sh\n├── .gitignore\n├── LICENSE\n└── README.md\n```\n\n### Explanation of the Purpose for Each Major Directory\n\n- **src/**: Contains all the source code for the microservice.\n  - **TitleRequests.Api/**: The main project directory for the Title Requests Microservice.\n    - **Controllers/**: Contains the API controllers that handle HTTP requests.\n    - **Models/**: Contains the data models such as `TitleRequest`, `TitleResponse`, and `ErrorModel`.\n    - **Services/**: Contains the business logic for processing title requests.\n    - **DataAccess/**: Contains the data access layer for interacting with the database.\n    - **Migrations/**: Contains database migration files.\n    - **Program.cs**: The entry point of the application.\n    - **Startup.cs**: Configures the application services and middleware.\n    - **appsettings.json**: Configuration file for application settings.\n  - **TitleRequests.Common/**: Contains common or shared code that can be used across multiple projects.\n    - **Logging/**: Contains logging-related utilities and configurations.\n    - **Monitoring/**: Contains monitoring-related utilities and configurations.\n    - **Utilities/**: Contains general utility classes and methods.\n  - **TitleRequests.Tests/**: Contains all test projects.\n    - **UnitTests/**: Contains unit tests for the microservice.\n    - **IntegrationTests/**: Contains integration tests for the microservice.\n    - **TestSettings.json**: Configuration file for test settings.\n- **docs/**: Contains documentation related to the project.\n  - **Architecture/**: Contains architecture-related documentation.\n  - **Requirements/**: Contains requirements-related documentation.\n  - **README.md**: The main readme file for the documentation.\n- **scripts/**: Contains scripts for building, deploying, and testing the microservice.\n  - **build.sh**: Script for building the project.\n  - **deploy.sh**: Script for deploying the project.\n  - **test.sh**: Script for running tests.\n- **.gitignore**: Specifies files and directories to be ignored by Git.\n- **LICENSE**: Contains the license information for the project.\n- **README.md**: The main readme file for the project.",
+               "requirements_overview": requirements_doc,
+               "current_task": init_task,
+               "additional_info": "",
+               "question": "",
+               "remarks": "",
+               "work_package": """{
     "work_package_name": "Install .NET SDK",
     "description": "Initialize a new .NET project for the Title Requests Microservice. Set up the project structure with folders for Controllers, Services, Repositories, Models, and Validators. Configure the project to use MongoDB.",
     "name": "Project Setup",
@@ -944,17 +945,15 @@ This code base copyrights belong to XYZ
     "LICENSE_URL": "https://opensource.org/licenses/Apache-2.0",
     "LICENSE_TEXT": "SPDX-License-Identifier: Apache-2.0\nCopyright 2024 Authors of CRBE & the Organization created CRBE"
 }"""}
-    
-
 
     # with open("/home/pranay/Desktop/Generatedfiles/latest/new_file.json","r") as json_file:
     #     f=json.load(json_file)
-    
+
 #     planner_thread_id = "3"
 #     Planner = PlannerWorkFlow(llm=llm, thread_id=planner_thread_id)
     # result= Coder.app.invoke(inputqh)
 
-    llm=OllamaLLM(model="stablelm2:1.6b")
-    response=llm.invoke("tell me a joke ")
+    llm = OllamaLLM(model="stablelm2:1.6b")
+    response = llm.invoke("tell me a joke ")
     print(response)
     # pprint(result)

@@ -42,6 +42,7 @@ class AgentInfo:
     alias: str = ""
     description: str = ""
 
+
 class LLMConfig:
     """
     Configuration for a Language Model (LLM).
@@ -191,41 +192,41 @@ class ProjectAgents(Enum):
     """
 
     supervisor = AgentInfo(
-        "Project Supervisor", 
+        "Project Supervisor",
         "SUP_01",
         alias="supervisor",
         description="Coordinates with the team, assigns tasks, and guides the team toward successful project completion."
     )
 
     architect = AgentInfo(
-        "Solution Architect", 
+        "Solution Architect",
         "ARC_02",
         alias="architect",
         description="Defines the project requirements and outlines the architectural framework."
     )
 # Takes current_task, project_status, user input, and project details, and outputs tasks, requirements_document, and coder_inputs for call_coder. It also updates project status, folder structure, and other project parameters
     coder = AgentInfo(
-        "Software Engineer", 
+        "Software Engineer",
         "ENG_03",
         alias="coder",
         description="Develops and writes code to the tasks assigned."
     )
 # Uses coder_inputs from call_architect to process the task, and outputs current_task and agents_status, handling task completion or awaiting further input
     rag = AgentInfo(
-        "Document Repository Manager", 
+        "Document Repository Manager",
         "RAG_04",
         alias="rag",
         description="Gathers information based on the user query and provides it to the team. Triggered at the **beginning** of the project, or during development and provides relevant information in response to queries. Oversees the vector database, manages document and file storage.  Processes question from current_task and returns additional_info and rag_query_answer, which are used by other agents like call_architect and call_supervisor to provide further details"
     )
 
     planner = AgentInfo(
-        "Project Planner", 
+        "Project Planner",
         "PLN_05",
         alias="planner",
         description="Creates detailed plans for task execution, based on requirements provided."
     )
 #  Takes current_task and project_path as inputs, and outputs planned_tasks and planned_task_requirements, which are later used to assign tasks to call_coder.
-    tester = AgentInfo(
+    tests_generator = AgentInfo(
         "Unit Tester",
         "TST_06",
         alias="tests_generator",
@@ -233,14 +234,14 @@ class ProjectAgents(Enum):
     )
 
     modernizer = AgentInfo(
-        "Knowledge Graph Generator", 
+        "Knowledge Graph Generator",
         "MOD_07",
         alias="modernizer",
         description="Generates and maintains the knowledge graph for the project, facilitating data relationships and insights."
     )
 
     human = AgentInfo(
-        "Human Intervention Specialist", 
+        "Human Intervention Specialist",
         "HUM_08",
         alias="human",
         description="Provides assistance and oversight when automated systems encounter issues or produce unreliable results."
@@ -272,7 +273,7 @@ class ProjectAgents(Enum):
             str: The unique identifier of the agent.
         """
         return self.value.agent_id
-    
+
     @property
     def alias(self) -> str:
         """
@@ -292,7 +293,8 @@ class ProjectAgents(Enum):
             Optional[str]: The description of the agent, or None if not set.
         """
         return self.value.description
-    
+
+
 AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.supervisor.agent_id: AgentConfig(
         ProjectAgents.supervisor.agent_name,
@@ -360,11 +362,11 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
             model_kwargs={"seed": 4000, "top_p": 0.6}
         )
     ),
-    ProjectAgents.tester.agent_id: AgentConfig(
-        ProjectAgents.tester.agent_name,
-        ProjectAgents.tester.agent_id,
-        ProjectAgents.tester.alias,
-        ProjectAgents.tester.description,
+    ProjectAgents.tests_generator.agent_id: AgentConfig(
+        ProjectAgents.tests_generator.agent_name,
+        ProjectAgents.tests_generator.agent_id,
+        ProjectAgents.tests_generator.alias,
+        ProjectAgents.tests_generator.description,
         LLMConfig(
             model="gpt-4o-2024-05-13",
             temperature=0.3,
@@ -402,6 +404,8 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
     ProjectAgents.reviewer.agent_id: AgentConfig(
         ProjectAgents.reviewer.agent_name,
         ProjectAgents.reviewer.agent_id,
+        ProjectAgents.reviewer.alias,
+        ProjectAgents.reviewer.description,
         LLMConfig(
             model="gpt-4o-2024-05-13",
             temperature=0.3,
