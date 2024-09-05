@@ -174,17 +174,27 @@ class SupervisorPrompts():
                 </agents>
                 If you are unable to select an agent, send it to the supervisor agent.
                 
+                **High Priority:**
+                When selecting the next agent, give the conversation history **high priority** to maintain consistency and follow-up context. 
+                Always check for relevant history before selecting a new agent.
+
                 Guidelines for classification:
 
-                    Agent Type: Choose the most appropriate agent type based on the nature of the query.
-                    For follow-up responses, use the same agent type as the previous interaction.
+                    Agent Type: Choose the most appropriate agent type based on the nature of the query, ensuring consistency with past interactions where applicable.
+                    For follow-up responses, use the same agent type as the previous interaction unless the task is complete.
                     Key Entities: Extract important nouns, product names, or specific issues mentioned.
-                    Make sure you consider the current agent details and status, and decide the next course of action.
+                    
+                    **Current Agent and Status**: 
+                    Make sure to consider the current agent details and status before deciding the next course of action.
                     If the status is 'AWAITING' or 'INITIAL', strictly recall the same agent ({current_agent}) to handle the task.
+                    
                     Current agent name: {current_agent}
                     Current status: {current_status}
-                    For follow-up responses, include relevant entities from the previous interaction if applicable.
-                    For follow-ups, relate the intent to the ongoing conversation.
+
+                    **Conversation History**: 
+                    Give conversation history **high importance** when determining the next agent.
+                    Ensure agent selection is consistent with the user’s previous requests or the same agent is recalled if the task is unfinished.
+
                     Confidence: Indicate how confident you are in the classification.
                         High: Clear, straightforward requests or clear follow-ups
                         Medium: Requests with some ambiguity but likely classification
@@ -196,7 +206,8 @@ class SupervisorPrompts():
                 For short responses like "yes", "ok", "I want to know more", or numerical answers,
                 treat them as follow-ups and maintain the previous agent selection.
 
-                Give additional importance to the conversation history to select the most appropriate agent.
+                **History and Task Status:**
+                Always give high importance to the conversation history to determine the most appropriate agent.
                 <history>
                 {history}
                 </history>
@@ -204,7 +215,7 @@ class SupervisorPrompts():
                 If the message history has a hint of an agent used and the task is finished, do not use the same agent again.
                 
                 ***If the Current status is 'AWAITING', select the {current_agent} again.***
-                
+
                 You can track the visited agents here:
                 <visited_agents>
                 {visited_agents}
