@@ -19,6 +19,7 @@ TemplateVariables = Dict[str, Union[str, List[str]]]
 class ClassifierResult:
     selected_agent: Optional[Agent]
     confidence: float
+    reason: str
 
 
 class Classifier(ABC):
@@ -31,16 +32,17 @@ class Classifier(ABC):
         self.user_input = ''
         self.agents: Dict[str, Agent] = {}
         self.visited_agents = []
+        self.project_status = ''
         self.tools = [
             {
                 "name": "analyzePrompt",
-                "description": "Analyze the user input and provide structured output",
+                "description": "Analyze the message history input and provide structured output",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "userinput": {
                             "type": "string",
-                            "description": "The original user input"
+                            "description": "The entire message history"
                         },
                         "selected_agent": {
                             "type": "string",
@@ -49,14 +51,40 @@ class Classifier(ABC):
                         "confidence": {
                             "type": "number",
                             "description": "Confidence level between 0 and 1"
+                        },
+                        "reason": {
+                            "type": "string",
+                            "description": "Reason for the selected agent"
                         }
                     },
-                    "required": ["userinput", "selected_agent", "confidence"]
+                    "required": ["userinput", "selected_agent", "confidence", 'reason']
                 }
             }
         ]
         self.current_agent = ""
         self.current_status = ""
+        self.flags = ""
+        self.project_flow = """
+       
+        **Genpod Development Team Workflow:**
+            The workflow begins when the user provides the initial input. Based on the *project status* flag, different team members take on specific roles and responsibilities.
+            1. **When Project Status is ‘NEW’:**   
+            If the *project status* is set to ‘NEW,’ the RAG agent must gather additional information required for further processing. This stage is crucial to ensure that all necessary data is collected before moving forward.
+            2. **When Project Status is ‘INITIAL’:**  
+            If the *project status* is ‘INITIAL,’ the Architect agent is responsible for preparing the requirements document, which defines the scope and serves as the blueprint for the next phases.
+            3. **When Project Status is ‘Monitoring’:**  
+            If the *project status* is ‘Monitoring’ and the task status is ‘AWAITING,’ and the request was initiated by the Architect, the RAG agent must provide the necessary information. If the RAG agent cannot provide this information, it should be gathered from a human resource.
+            4. **When Project Status is ‘Executing’:**  
+            - If there are no planned tasks available, the Planner is responsible for preparing them.  
+            - If planned tasks are available, the Coder and Tester must complete them.
+            5. **Special Considerations in the ‘Executing’ Status:**  
+            - If the task status is ‘DONE’ or ‘ABANDONED,’ the Supervisor can assign new tasks for the Planner.  
+            - If the task status is ‘IN PROGRESS,’ the Coder and Tester are responsible for completing the available tasks.  
+            - If the task involves *is_function_generation_required*, the Tester must first complete the unit test cases, after which the Coder can finish the task. If function generation is not required, the Coder can complete the task independently.
+            6. **When Project Status is ‘DONE’:**  
+            When the *project status* is set to ‘DONE,’ the system should trigger an automatic update to reflect the completion of all tasks.
+                    
+                    """
 
     def set_agents(self, agents: Dict[str, Agent]) -> None:
         self.agent_descriptions = "\n\n".join(f"{agent.agent_id}:{agent.description}"
@@ -77,10 +105,12 @@ class Classifier(ABC):
     def set_history(self, messages) -> None:
         self.history = self.format_messages(messages)
 
-    def set_additional_info(self, task_info, current_status, visited_agents) -> None:
-        self.current_agent = self.format_messages([task_info])
-        self.current_status = self.format_messages([current_status])
-        self.visited_agents = self.format_messages(visited_agents)
+    def set_additional_info(self, task_info, current_status, visited_agents, project_status, flags) -> None:
+        self.current_agent = task_info
+        self.current_status = current_status
+        self.visited_agents = visited_agents
+        self.project_status = project_status
+        self.flags = flags
 
     @staticmethod
     def replace_placeholders(template: str, variables) -> str:
@@ -98,7 +128,10 @@ class Classifier(ABC):
             "current_agent": self.current_agent,
             "current_status": self.current_status,
             "user_prompt": self.user_input,
-            "visited_agents": self.visited_agents
+            "visited_agents": self.visited_agents,
+            "project_status": self.project_status,
+            "project_flow": self.project_flow,
+            "flags": self.flags
         }
         self.system_prompt = self.replace_placeholders(
             self.prompt_template, all_variables)
@@ -150,18 +183,20 @@ class SupervisorClassifier(Classifier, SupervisorPrompts):
         response = self.llm.invoke(messages)
         selected_agent = response.tool_calls[0]['args']['selected_agent']
         selected_conf = response.tool_calls[0]['args']['confidence']
+        reason = response.tool_calls[0]['args']['reason']
 
         intent_classifier_result = ClassifierResult(
             selected_agent=self.get_agent_by_id(selected_agent),
-            confidence=float(selected_conf)
+            confidence=float(selected_conf),
+            reason=reason
         )
         print(intent_classifier_result)
         return intent_classifier_result
 
     def classify(self, state: SupervisorState) -> ClassifierResult:
-        chat_history = state['messages']
+        chat_history = state['messages'][-5:]
         self.set_history(chat_history)
         self.set_additional_info(state['current_agent'], state['current_task'].task_status.value,
-                                 state['visited_agents'])
+                                 state['visited_agents'], state['project_status'].value)
 
         return self.process_request(state)

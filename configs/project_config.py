@@ -202,7 +202,7 @@ class ProjectAgents(Enum):
         "Solution Architect",
         "ARC_02",
         alias="architect",
-        description="Defines the project requirements and outlines the architectural framework."
+        description="Outlines the architectural framework."
     )
 # Takes current_task, project_status, user input, and project details, and outputs tasks, requirements_document, and coder_inputs for call_coder. It also updates project status, folder structure, and other project parameters
     coder = AgentInfo(
@@ -216,9 +216,10 @@ class ProjectAgents(Enum):
         "Document Repository Manager",
         "RAG_04",
         alias="rag",
-        description="Gathers information based on the user query and provides it to the team. Triggered at the **beginning** of the project, or during development and provides relevant information in response to queries. Oversees the vector database, manages document and file storage.  Processes question from current_task and returns additional_info and rag_query_answer, which are used by other agents like call_architect and call_supervisor to provide further details"
+        description="Gathers information based on the user query and provides it to the team. Triggered at the **beginning** of the project, or during development and provides relevant information in response to queries. Oversees the vector database, manages document and file storage."
     )
 
+#  Processes question from current_task and returns additional_info and rag_query_answer, which are used by other agents like call_architect and call_supervisor to provide further details
     planner = AgentInfo(
         "Project Planner",
         "PLN_05",

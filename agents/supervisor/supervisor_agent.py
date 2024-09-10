@@ -224,7 +224,8 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             (
                 ChatRoles.SYSTEM,
                 f'A new project with the following details has been received from the user: {state["original_user_input"]}'
-            )
+            ),
+            (ChatRoles.AI, "The project has been received by the team, and now the RAG (team member) needs to gather more detailed information about the project. Initial user input is often too vague to begin work, which can lead to generic results. To ensure clarity on user expectations, RAG retrieves relevant information from standardized documents. This helps provide the team with the necessary context to deliver more efficient and accurate outputs.")
         ]
         state['human_feedback'] = []
         state['rag_cache_queries'] = []
@@ -241,7 +242,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         state['infile_license_comments'] = {}
         state['commands_to_execute'] = {}
         state['visited_agents'] = []
-        state['current_agent'] = "RAG"
+        state['current_agent'] = "None"
 
         self.responses = {member.member_id: []
                           for member in self.team.get_team_members_as_list()}
@@ -258,6 +259,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         logger.info(f"{self.team.rag.member_name} has been called.")
         self.called_agent = self.team.rag.member_id
+        state['current_agent'] = self.team.rag.member_name
 
         # TODO - LOW: has to be moved to RAG agent
         # check if rag cache was ready if not prepare one
@@ -316,7 +318,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 state['messages'] += [
                     (
                         ChatRoles.AI,
-                        f"{self.team.rag.member_name}: Received user requirements and gathering additional information."
+                        f"{self.team.rag.member_name}: Received user requirements and gathering additional information to begin the project."
                     )
                 ]
 
@@ -336,6 +338,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
                 logger.info(
                     f"{self.team.rag.member_name}: Received a query from team members and preparing an answer.")
+
                 state['messages'] += [
                     (
                         ChatRoles.AI,
@@ -352,7 +355,8 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 state['agents_status'] = f'{self.team.rag.member_name} completed'
                 self.responses[self.team.rag.member_id].append(
                     ("Returned from RAG database serving a query", state['current_task']))
-
+                # state['messages'] += [
+                #     (ChatRoles.AI, f'{state['visited_agents'][-2]} can be called back now')]
             return {**state}
 
         return {**state}
@@ -364,6 +368,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         logger.info(f"{self.team.architect.member_name} has been called.")
         self.called_agent = self.team.architect.member_id
+        state['current_agent'] = self.team.architect.member_name
 
         if state['project_status'] == PStatus.INITIAL:
             logger.info(
@@ -430,18 +435,21 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 # Additional Human input is needed
                 state['current_task'] = architect_result['current_task']
                 state['project_status'] = PStatus.HALTED
+        else:
+            state['current_agent'] = 'None'
 
         return state
 
     def call_coder(self, state: SupervisorState) -> SupervisorState:
         """
         """
-        state['messages'] += [(
-            ChatRoles.AI,
-            'Calling Coder Agent'
-        )]
+        # state['messages'] += [(
+        #     ChatRoles.AI,
+        #     'Calling Coder Agent'
+        # )]
 
         logger.info("---------- Calling Coder ----------")
+        state['current_agent'] = self.team.coder.member_name
 
         coder_result = self.team.coder.invoke({
             'project_name': state['project_name'],
@@ -491,6 +499,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         )]
 
         logger.info("---------- Calling Test Code Generator ----------")
+        state['current_agent'] = self.team.tests_generator.member_name
 
         test_coder_result = self.team.tests_generator.invoke({
             'project_name': state['project_name'],
@@ -542,7 +551,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         logger.info(f"{self.team.supervisor.member_name} has been called.")
         self.called_agent = self.team.supervisor.member_id
-
+        # state['current_agent'] = self.team.supervisor.member_name
         if state['project_status'] == PStatus.RECEIVED:
             # When the project is in the 'RECEIVED' phase:
             # - RAG agent has to be called.
@@ -555,8 +564,9 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 ),
                 (
                     ChatRoles.AI,
-                    "A New task has been created. RAG agent can now gather additional information."
-                )
+                    "RAG agent can now gather necessary information to begin the project."
+                ),
+                (ChatRoles.AI, "When the project is in the 'RECEIVED' phase, the RAG agent is called to gather any additional information required by the team for further processing.")
             ]
 
             # create a task for rag agent
@@ -567,6 +577,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 question=state['original_user_input']
             )
             state['project_status'] = PStatus.NEW
+
             logger.info(
                 f"{self.team.supervisor.member_name}: Created task for RAG agent to gather additional info for the user requested project. Project Status moved to {state['project_status']}")
 
@@ -578,6 +589,15 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
             # If the task is marked as done, it means the RAG agent has gathered the additional information
             # needed for the team to begin the project.
+
+            # state['messages'] += [
+            #     (
+            #         ChatRoles.AI,
+            #         " When the project status is 'NEW',The RAG Agent task is complete. The next step is to involve the architect to generate the requirements document for the team. If the task is marked as done, it means the RAG agent has gathered the additional information needed for the team to begin the project."
+            #     )
+
+            # ]
+
             if state['current_task'].task_status == Status.DONE:
                 if self.is_initial_additional_info_ready:
                     state['project_status'] = PStatus.INITIAL
@@ -591,13 +611,23 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                     )
 
                     state['messages'] += [
+                        # (
+                        #     ChatRoles.AI,
+                        #     "RAG agent has gathered the additional information."
+                        # ),
+
                         (
                             ChatRoles.AI,
-                            "RAG agent has gathered the additional information."
+                            " Once the project is initiated, the architect gathers requirements, and if additional information is needed, RAG is used to assist during this phase."
                         ),
+                        # (
+
+                        #     ChatRoles.AI,
+                        #     " When the project is in the 'INITIAL' phase: 1. The architect has either completed their tasks or is waiting for additional information. If the architect has completed their tasks: Change the project status to 'EXECUTING' and proceed with the next steps. If the architect is still waiting for additional information: - Change the project status to 'MONITORING' and continue monitoring the situation."
+                        # ),
                         (
                             ChatRoles.AI,
-                            "A New task has been created for the Architect agent to gather additional inforamtion."
+                            "A New task has been created for the Architect agent"
                         )
                     ]
 
@@ -625,13 +655,35 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
                 state['messages'] += [
                     (
+
                         ChatRoles.AI,
                         "Architect agent has prepared the requirements document for the team."
                     ),
                     (
+
                         ChatRoles.AI,
-                        "Planner can take initiative and prepare the tasks for the team."
-                    )
+                        "Now it should go to the supervisor agent to change the status."
+                    ),
+
+                    #  (
+                    #     ChatRoles.AI,
+                    #     "Planner can take initiative and prepare the tasks for the team."
+                    # ),
+                    # (
+                    #     ChatRoles.AI,
+                    #     " If no tasks are available, the Planner is responsible for creating new ones."
+                    # ),
+                    (
+                        ChatRoles.AI,
+                        " If the current task status is DONE and  the project status is EXECUTING, call back the SUPERVISOR AGENT to get new task status "
+                    ),
+                    # (
+                    #     ChatRoles.AI,
+                    #     " When the project status is 'EXECUTING,' the Planner, Coder, and Tester will work on tasks prepared by the Architect. "
+                    # ),
+                    # If tasks are already planned, the Coder and Tester will proceed with them. This process is triggered when the Architect finalizes the requirements, when the Coder and Tester complete their tasks, or when all planned tasks are finished, prompting the Planner to prepare new tasks.
+
+
                 ]
 
                 logger.info(
@@ -647,18 +699,21 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 state['messages'] += [
                     (
                         ChatRoles.AI,
-                        "Architect agent has requested the additional information."
+                        "Call RAG agent now to gather additional information."
                     ),
-                    (
-                        ChatRoles.AI,
-                        "RAG Agent will respond to the query."
-                    )
+                    # (
+                    #     ChatRoles.AI,
+                    #     " When the project status is 'MONITORING, the current agent is awaiting and needs help of other agent to work"
+                    # )
                 ]
 
                 logger.info(
                     f"{self.team.supervisor.member_name}: Architect agent has requested the additional information.")
                 logger.info(
                     f"{self.team.supervisor.member_name}: RAG Agent will respond to the query. Moved Project to {state['project_status']} phase.")
+            # else:
+            #     state['messages'] += [
+            #         (ChatRoles.AI, f"Current agent {state['current_agent']} doesn't have enough information to proceed. Consider calling other agents.")]
 
             return state
         elif state['project_status'] == PStatus.MONITORING:
@@ -674,6 +729,11 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                     (
                         ChatRoles.AI,
                         "Team has responded to the query from team member."
+                    ),
+
+                    (
+                        ChatRoles.AI,
+                        "Query has been answered. Moved Project to {state['project_status']} phase."
                     )
                 ]
 
@@ -698,6 +758,22 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             # or
             # all planned tasks were done.
             # Call Planner to prepare planned tasks.
+
+            state['messages'] += [
+                # (
+                #     ChatRoles.AI,
+                #     "Team has responded to the query from team member."
+                # ),
+                (
+                    ChatRoles.AI,
+                    "Planner can take initiative and prepare the tasks for the team."
+                ),
+                (
+                    ChatRoles.AI,
+                    " If no tasks are available, the Planner is responsible for creating new ones."
+                ),
+
+            ]
 
             try:
                 state['tasks'].update_task(state['current_task'])
@@ -726,6 +802,21 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             elif state['current_task'].task_status == Status.AWAITING:
                 # Planner needs additional information
                 # Architect was responsible for answering the query if not then rag comes into play.
+                state['messages'] += [
+
+                    (
+                        ChatRoles.AI,
+                        "Planner needs additional information from the team."
+                    ),
+                    (
+                        ChatRoles.AI,
+                        "Ask Architect agent additional information."
+                    ),
+                    (
+                        ChatRoles.AI,
+                        "If Architect agent has not provided any additional information, direct it to RAG agent for help."
+                    ),
+                ]
                 self.previous_project_status = state['project_status']
                 state['project_status'] = PStatus.MONITORING
                 self.calling_agent = self.called_agent
@@ -747,6 +838,21 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                     else:
                         state['current_planned_task'] = next_planned_task
                         self.are_planned_tasks_in_progress = True
+                        state['messages'] += [
+
+                            (
+                                ChatRoles.AI,
+                                "Planner needs additional information from the team."
+                            ),
+                            (
+                                ChatRoles.AI,
+                                "Ask Architect agent additional information."
+                            ),
+                            (
+                                ChatRoles.AI,
+                                "If Architect agent has not provided any additional information, direct it to RAG agent for help."
+                            ),
+                        ]
                         self.calling_agent = self.team.supervisor.member_id
 
             return state
@@ -771,6 +877,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         """
 
         logger.info("----------Calling Planner----------")
+
         planner_result = self.team.planner.invoke({
             'current_task': state['current_task'],
             'project_path': state['project_path']
@@ -916,12 +1023,14 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         #         f"Delegator: Invoking call_rag due to Project Status: {PStatus.NEW}")
         #     return 'call_rag'
 
-        if state['project_status'] != PStatus.HALTED.value:
-
+        if state['project_status'].value != PStatus.HALTED.value:
+            # if state['current_task'].task_status == Status.DONE and state['project_status'] == PStatus.EXECUTING:
+            #     'call_supervisor'
             classifier_output = self.classifier.classify(state)
             state['visited_agents'].append(
                 classifier_output.selected_agent.member_name)
             state['current_agent'] = classifier_output.selected_agent.member_name
+
             return f'call_{classifier_output.selected_agent.alias}'
         else:
             return "update_state"
@@ -931,14 +1040,16 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         #     # architect is first team member who receives the project details and prepares the the requirements out of it.
         #     # In this process if architect need aditional information thats when RAG comes into play at this phase of Project.
         #     if self.is_initial_additional_info_ready:
-        #         logger.info(f"Delegator: Invoking call_architect due to Project Status: {PStatus.INITIAL}")
+        #         logger.info(
+        #             f"Delegator: Invoking call_architect due to Project Status: {PStatus.INITIAL}")
         #         return 'call_architect'
         # elif state['project_status'] == PStatus.MONITORING:
         #     # During query answering phase by agents PROJECT_STATUS will be in this phase
 
         #     # RAG is the source for the information. It can fetch relevant information from vector DB for the given query.
         #     if state['current_task'].task_status == Status.AWAITING:
-        #         logger.info(f"Delegator: Invoking call_rag due to Project Status: {PStatus.MONITORING} and Task Status: {Status.AWAITING}.")
+        #         logger.info(
+        #             f"Delegator: Invoking call_rag due to Project Status: {PStatus.MONITORING} and Task Status: {Status.AWAITING}.")
         #         return 'call_rag'
         # elif state['project_status'] == PStatus.EXECUTING:
         #     # During the execution phase, there are two key scenarios:
@@ -951,30 +1062,35 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         #     if self.are_planned_tasks_in_progress:
         #         if state['current_planned_task'].is_function_generation_required:
         #             if not state['current_planned_task'].is_test_code_generated:
-        #                 logger.info(f"Delegator: Invoking call_test_code_generator due to Project Status: {PStatus.EXECUTING} and PlannedTask involving is_function_generation_required and is_test_code_generated.")
+        #                 logger.info(
+        #                     f"Delegator: Invoking call_test_code_generator due to Project Status: {PStatus.EXECUTING} and PlannedTask involving is_function_generation_required and is_test_code_generated.")
         #                 return 'call_test_code_generator'
 
         #         # Other conditions like is_code_generated from PlannedTask object is also useful
         #         # to figure out if coder has already completed the task.
         #         if not state['current_planned_task'].is_code_generate:
-        #             logger.info(f"Delegator: Invoking call_test_code_generator due to Project Status: {PStatus.EXECUTING} and PlannedTask Status: {Status.NEW}.")
+        #             logger.info(
+        #                 f"Delegator: Invoking call_test_code_generator due to Project Status: {PStatus.EXECUTING} and PlannedTask Status: {Status.NEW}.")
         #             return 'call_coder'
         #     else:
         #         if state['current_task'].task_status == Status.NEW:
-        #             logger.info(f"Delegator: Invoking call_planner due to Project Status: {PStatus.EXECUTING} and Task Status: {Status.NEW}.")
+        #             logger.info(
+        #                 f"Delegator: Invoking call_planner due to Project Status: {PStatus.EXECUTING} and Task Status: {Status.NEW}.")
         #             return 'call_planner'
 
         #     # occurs when architect just completed the assigned task(generating documents and tasks)
         #     # and now supervisor has to assign tasks for planner.
-        #     logger.info(f"Delegator: Invoking call_supervisor due to Project Status: {PStatus.EXECUTING}.")
+        #     logger.info(
+        #         f"Delegator: Invoking call_supervisor due to Project Status: {PStatus.EXECUTING}.")
         #     return 'call_supervisor'
         # elif state['project_status'] == PStatus.HALTED:
         #     # There may be situations where the LLM (Language Learning Model) cannot make a decision
         #     # or where human input is required to proceed. This could be due to ambiguity or intentional
         #     # scenarios that need human judgment to ensure progress.
 
-        #     logger.info(f"Delegator: Invoking call_human due to Project Status: {PStatus.HALTED}.")
-        #     return 'update_state' #'Human'
+        #     logger.info(
+        #         f"Delegator: Invoking call_human due to Project Status: {PStatus.HALTED}.")
+        #     return 'update_state'  # 'Human'
 
         # logger.info(f"Delegator: Invoking update_state.")
         # return "update_state"

@@ -162,126 +162,94 @@ class SupervisorPrompts():
 
     classifier_prompt = PromptTemplate(
         template="""
-                Given the user prompt: "{user_prompt}"
-                You are AgentMatcher, an intelligent assistant designed to analyze user queries and match them with
-                the most suitable agent or department. Your task is to understand the user's request,
-                identify key entities and intents, and determine which agent or department would be best equipped
-                to handle the query.
+        User input {user_prompt}
+                You are AgentMatcher, an intelligent assistant designed to analyze message history and project flow to match the query with the most suitable agent. 
+                Your task is to understand the message history, identify key entities and intents, and determine which agent would be best equipped at any given point based on the history of interactions.
 
-                Make sure you analyze the user's input and categorize it into one of the following agent types:
-                <agents>
-                {agent_descriptions}
-                </agents>
-                If you are unable to select an agent, send it to the supervisor agent.
+                Make sure you analyze the message history and categorize it into one of the following agent types: <agents> {agent_descriptions} </agents>
+
+                If you are unable to select an agent, escalate the query to the Supervisor agent.
                 
-                **High Priority:**
-                When selecting the next agent, give the conversation history **high priority** to maintain consistency and follow-up context. 
-                Always check for relevant history before selecting a new agent.
 
-                Guidelines for classification:
+                High Priority:
+                When selecting the next agent, give the conversation history high priority to maintain consistency and follow-up context. Always check for relevant history before selecting a new agent.
 
-                    Agent Type: Choose the most appropriate agent type based on the nature of the query, ensuring consistency with past interactions where applicable.
-                    For follow-up responses, use the same agent type as the previous interaction unless the task is complete.
-                    Key Entities: Extract important nouns, product names, or specific issues mentioned.
-                    
-                    **Current Agent and Status**: 
-                    Make sure to consider the current agent details and status before deciding the next course of action.
-                    If the status is 'AWAITING' or 'INITIAL', strictly recall the same agent ({current_agent}) to handle the task.
-                    
-                    Current agent name: {current_agent}
-                    Current status: {current_status}
+            Guidelines for Classification:
+                Project Flow: {project_flow}
+                Project Flow: Understand the project flow to know the step by step process. 
+                Agent Type: Choose the most appropriate agent type based on the message history, ensuring consistency with past interactions where applicable.
 
-                    **Conversation History**: 
-                    Give conversation history **high importance** when determining the next agent.
-                    Ensure agent selection is consistent with the user’s previous requests or the same agent is recalled if the task is unfinished.
+                Current Agent and Status:
 
-                    Confidence: Indicate how confident you are in the classification.
-                        High: Clear, straightforward requests or clear follow-ups
-                        Medium: Requests with some ambiguity but likely classification
-                        Low: Vague or multi-faceted requests that could fit multiple categories
-                    Is Followup: Indicate whether the input is a follow-up to a previous interaction.
+                Consider the current agent details and status before deciding the next course of action.
+                Check the project status and refer to the message history to determine the course of action.
+                Current agent name: {current_agent}
+                Agent status: {current_status}
+                Project status: {project_status}
 
-                Handle variations in user input, including different phrasings, synonyms,
-                and potential spelling errors.
-                For short responses like "yes", "ok", "I want to know more", or numerical answers,
-                treat them as follow-ups and maintain the previous agent selection.
+                Conversation History:
 
-                **History and Task Status:**
-                Always give high importance to the conversation history to determine the most appropriate agent.
-                <history>
-                {history}
-                </history>
-                
-                If the message history has a hint of an agent used and the task is finished, do not use the same agent again.
-                
-                ***If the Current status is 'AWAITING', select the {current_agent} again.***
+                Give conversation history high importance when determining the next agent.
+                Conversation History: {history}
+                Confidence: Indicate how confident you are in the classification.
+
+                High: Clear, straightforward requests or follow-ups
+                Medium: Requests with some ambiguity but likely classification
+                Low: Vague or multi-faceted messages that could fit multiple categories
+                Reason: Provide a brief explanation of why a particular agent was selected based on the message history.
 
                 You can track the visited agents here:
                 <visited_agents>
                 {visited_agents}
                 </visited_agents>
-
                 
+                Look at the data here serialized output below and extract boolean flag information from it
+                to select the next agent. 
+                {flags}
+
                 Examples:
+                Initial query without prior context in the message history:
 
-                1. Initial query with no context:
-                User: "What are the symptoms of the flu?"
+                Message History: "What’s the architectural framework for this project?"
+                Selected Agent: Architect agent
+                Confidence: 0.95
+                Reason: The message directly relates to project architecture, which is the Architect agent's domain.
+                Switching from code-related to planning-related:
 
-                userinput: What are the symptoms of the flu?
-                selected_agent: agent-name
-                confidence: 0.95
+                Message History:
+                "[Coder]: There’s a typo in your function; fix it to proceed."
+                "[Message]: What’s the next set of tasks for the project?"
+                Selected Agent: Project Planner agent
+                Confidence: 0.9
+                Reason: The query is now focused on planning the next set of tasks, which falls under the Project Planner agent's role.
+                Follow-up query for the same agent:
 
-                2. Context switching example between a TechAgentand a BillingAgent:
-                Previous conversation:
-                User: "How do I set up a wireless printer?"
-                Assistant: [agent-a]: To set up a wireless printer, follow these steps:
-                1. Ensure your printer is Wi-Fi capable.
-                2. Connect the printer to your Wi-Fi network.
-                3. Install the printer software on your computer.
-                4. Add the printer to your computer's list of available printers.
-                Do you need more detailed instructions for any of these steps?
-                User: "Actually, I need to know about my account balance"
+                Message History:
+                "[Architect]: The architecture will follow a microservices-based approach."
+                "[Message]: Can you give me more details on how the components will communicate?"
+                Selected Agent: Architect agent
+                Confidence: 0.95
+                Reason: The user is asking for further clarification on architecture, which continues the conversation with the Architect agent.
+                Human intervention needed due to errors:
 
-                userinput: Actually, I need to know about my account balance</userinput>
-                selected_agent: agent-name
-                confidence: 0.9
+                Message History:
+                "[Knowledge Graph Generator]: I’ve generated the graph schema."
+                "[Message]: The graph keeps failing when I run the data through it."
+                Selected Agent: Human Intervention Specialist
+                Confidence: 0.85
+                Reason: Automated systems are encountering issues, and the Human Intervention Specialist is best equipped to handle such problems.
+                Code Review request:
 
-                3. Follow-up query example for the same agent:
-                Previous conversation:
-                User: "What's the best way to lose weight?"
-                Assistant: [agent-name-1]: The best way to lose weight typically involves a combination
-                of a balanced diet and regular exercise.
-                It's important to create a calorie deficit while ensuring you're getting proper nutrition.
-                Would you like some specific tips on diet or exercise?
-                User: "Yes, please give me some diet tips"
+                Message History:
+                "[Coder]: Code implementation is complete."
+                "[Message]: Can someone review the code for adherence to clean code standards?"
+                Selected Agent: Code Reviewer
+                Confidence: 0.9
+                Reason: The request specifically pertains to code review, which is the responsibility of the Code Reviewer agent.
 
-                userinput: Yes, please give me some diet tips
-                selected_agent: agent-name-1
-                confidence: 0.95
-
-                4. Multiple context switches with final follow-up:
-                Conversation history:
-                User: "How much does your premium plan cost?"
-                Assistant: [agent-name-a]: Our premium plan is priced at $49.99 per month.
-                This includes features such as unlimited storage, priority customer support,
-                and access to exclusive content. Would you like me to go over the benefits in more detail?
-                User: "No thanks. Can you tell me about your refund policy?"
-                Assistant: [agent-name-b]: Certainly! Our refund policy allows for a full refund within 30 days
-                of purchase if you're not satisfied with our service. After 30 days, refunds are prorated based
-                on the remaining time in your billing cycle. Is there a specific concern you have about our service?
-                User: "I'm having trouble accessing my account"
-                Assistant: [agenc-name-c]: I'm sorry to hear you're having trouble accessing your account.
-                Let's try to resolve this issue. Can you tell me what specific error message or problem
-                you're encountering when trying to log in?
-                User: "It says my password is incorrect, but I'm sure it's right"
-
-                userinput: It says my password is incorrect, but I'm sure it's right
-                selected_agent: agent-name-c
-                confidence: 0.9
-
-                Skip any preamble and provide only the response in the specified format.
-                        
-            """,
+                            Skip any preamble and provide only the response in the specified format.
+                                    
+                        """,
         input_variables=["agent_descriptions", "history",
-                         "current_agent", "current_status", "user_prompt", "visited_agents"],
+                         "current_agent", "current_status", "user_prompt", "visited_agents", "project_status", "project_flow", "flags"],
     )
