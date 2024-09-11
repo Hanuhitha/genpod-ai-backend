@@ -163,93 +163,71 @@ class SupervisorPrompts():
     classifier_prompt = PromptTemplate(
         template="""
         User input {user_prompt}
-                You are AgentMatcher, an intelligent assistant designed to analyze message history and project flow to match the query with the most suitable agent. 
-                Your task is to understand the message history, identify key entities and intents, and determine which agent would be best equipped at any given point based on the history of interactions.
-
-                Make sure you analyze the message history and categorize it into one of the following agent types: <agents> {agent_descriptions} </agents>
-
-                If you are unable to select an agent, escalate the query to the Supervisor agent.
+                You are AgentMatcher, an intelligent assistant designed to analyze the project flow to match the query with the most suitable agent. 
+                Your task is to understand the project flow, identify key entities and intents, and determine which agent would be best equipped at any given point based on the status provided and flow of interactions.
                 
 
+                Categorize the agent into one of the following agent types: <agents> {agent_descriptions} </agents>
+
                 High Priority:
-                When selecting the next agent, give the conversation history high priority to maintain consistency and follow-up context. Always check for relevant history before selecting a new agent.
-
+                1. When selecting the next agent, give the project flow high priority to maintain consistency and follow-up context. Always check for relevant history before selecting a new agent.
+                2. Select your agent also basing on the flags.
             Guidelines for Classification:
-                Project Flow: {project_flow}
                 Project Flow: Understand the project flow to know the step by step process. 
-                Agent Type: Choose the most appropriate agent type based on the message history, ensuring consistency with past interactions where applicable.
-
+                Project Flow: {project_flow}
+                Agent Type: Choose the most appropriate agent type based on the project flow, ensuring consistency with past interactions where applicable.
+                 High Priority: Look at the data here serialized output below and extract boolean flag information from it
+                to select the next agent. 
+                {flags}
                 Current Agent and Status:
-
                 Consider the current agent details and status before deciding the next course of action.
                 Check the project status and refer to the message history to determine the course of action.
-                Current agent name: {current_agent}
-                Agent status: {current_status}
-                Project status: {project_status}
-
-                Conversation History:
-
-                Give conversation history high importance when determining the next agent.
-                Conversation History: {history}
+                    Calling Agent: {current_agent}
+                    task status: {current_status}
+                    Project status: {project_status}
+                    Conversation History: {history}
+                    
                 Confidence: Indicate how confident you are in the classification.
-
-                High: Clear, straightforward requests or follow-ups
-                Medium: Requests with some ambiguity but likely classification
-                Low: Vague or multi-faceted messages that could fit multiple categories
-                Reason: Provide a brief explanation of why a particular agent was selected based on the message history.
+                    High: Clear, straightforward requests or follow-ups
+                    Medium: Requests with some ambiguity but likely classification
+                    Low: Vague or multi-faceted messages that could fit multiple categories
+                 Reason: Provide a brief explanation of why a particular agent was selected based on the project flow and other indicators like the project status, task status and current agent. Mention the flags in the reason.
 
                 You can track the visited agents here:
                 <visited_agents>
                 {visited_agents}
-                </visited_agents>
+                </visited_agents>           
                 
-                Look at the data here serialized output below and extract boolean flag information from it
-                to select the next agent. 
-                {flags}
-
-                Examples:
-                Initial query without prior context in the message history:
-
-                Message History: "What’s the architectural framework for this project?"
-                Selected Agent: Architect agent
-                Confidence: 0.95
-                Reason: The message directly relates to project architecture, which is the Architect agent's domain.
-                Switching from code-related to planning-related:
-
-                Message History:
-                "[Coder]: There’s a typo in your function; fix it to proceed."
-                "[Message]: What’s the next set of tasks for the project?"
-                Selected Agent: Project Planner agent
-                Confidence: 0.9
-                Reason: The query is now focused on planning the next set of tasks, which falls under the Project Planner agent's role.
-                Follow-up query for the same agent:
-
-                Message History:
-                "[Architect]: The architecture will follow a microservices-based approach."
-                "[Message]: Can you give me more details on how the components will communicate?"
-                Selected Agent: Architect agent
-                Confidence: 0.95
-                Reason: The user is asking for further clarification on architecture, which continues the conversation with the Architect agent.
-                Human intervention needed due to errors:
-
-                Message History:
-                "[Knowledge Graph Generator]: I’ve generated the graph schema."
-                "[Message]: The graph keeps failing when I run the data through it."
-                Selected Agent: Human Intervention Specialist
-                Confidence: 0.85
-                Reason: Automated systems are encountering issues, and the Human Intervention Specialist is best equipped to handle such problems.
-                Code Review request:
-
-                Message History:
-                "[Coder]: Code implementation is complete."
-                "[Message]: Can someone review the code for adherence to clean code standards?"
-                Selected Agent: Code Reviewer
-                Confidence: 0.9
-                Reason: The request specifically pertains to code review, which is the responsibility of the Code Reviewer agent.
-
-                            Skip any preamble and provide only the response in the specified format.
-                                    
+                
+                Skip any preamble and provide only the response in the specified format.
+                    
                         """,
         input_variables=["agent_descriptions", "history",
                          "current_agent", "current_status", "user_prompt", "visited_agents", "project_status", "project_flow", "flags"],
     )
+
+ # Examples:
+
+    #     Selected Agent: Architect agent
+    #     Confidence: 0.95
+    #     Reason: The calling agent is RAG, so you have all the required information to proceed to the architectural agent. Also the project status is INITIAL and Task status is  NEW.
+
+    #     Selected Agent: RAG agent
+    #     Confidence: 0.95
+    #     Reason: The calling agent is Architect agent, so you have need more information to proceed. Also the project status is INITIAL and Task status is  AWAITING.
+
+    #     Selected Agent: Supervisor agent
+    #     Confidence: 0.95
+    #     Reason: The calling agent is Architect agent. Also the project status is EXECUTING and Task status is DONE.
+
+    #     Selected Agent: Planner agent
+    #     Confidence: 0.95
+    #     Reason: The calling agent is Supervisor agent. Also the project status is EXECUTING and Task status is NEW. The flag are_planned_task_in_progress is False
+
+    #     Selected Agent: Test Code Generator agent
+    #     Confidence: 0.95
+    #     Reason: The flag are_planned_task_in_progress is True, is_function_generation_required is True. is_test_code_generated is False
+
+    #     Selected Agent: Coder agent
+    #     Confidence: 0.95
+    #     Reason: The project status is EXECUTING. The flag are_planned_task_in_progress is True, is_code_generate is False.

@@ -6,6 +6,7 @@ from typing_extensions import Any
 GenericAgentState = TypeVar('GenericAgentState', bound=Any)
 GenericPrompts = TypeVar('GenericPrompts', bound=Any)
 
+
 class Agent(Generic[GenericAgentState, GenericPrompts]):
     """
     Represents an agent equipped with a language learning model (LLM) that can perform various tasks.
@@ -18,13 +19,13 @@ class Agent(Generic[GenericAgentState, GenericPrompts]):
         llm (ChatOpenAI): The language learning model used by the agent, which can be ChatOpenAI model.
     """
 
-    agent_id : str # Unique identifier for the agent
-    agent_name: str # Name of the agent
-    description: str # Description of the agent's functionality
+    agent_id: str  # Unique identifier for the agent
+    agent_name: str  # Name of the agent
+    description: str  # Description of the agent's functionality
 
-    state: GenericAgentState # Current state of the agent
+    state: GenericAgentState  # Current state of the agent
     prompts: GenericPrompts
-    llm: ChatOpenAI # This is the language learning model (llm) for the agent.
+    llm: ChatOpenAI  # This is the language learning model (llm) for the agent.
 
     def __init__(self, agent_id: str, agent_name: str, state: GenericAgentState, prompts: GenericPrompts, llm: ChatOpenAI) -> None:
         """
@@ -56,7 +57,7 @@ class Agent(Generic[GenericAgentState, GenericPrompts]):
 
         self.state = {**state}
         return {**self.state}
-    
+
     def __repr__(self) -> str:
         """
         Provides a string representation of the Agent instance.

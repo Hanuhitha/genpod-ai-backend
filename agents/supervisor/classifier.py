@@ -36,17 +36,18 @@ class Classifier(ABC):
         self.tools = [
             {
                 "name": "analyzePrompt",
-                "description": "Analyze the message history input and provide structured output",
+                "description": "Analyze the process flow input and provide structured output. Selected agent cannot be None",
+
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "userinput": {
+                        "project_flow": {
                             "type": "string",
-                            "description": "The entire message history"
+                            "description": "The process flow, flags and status"
                         },
                         "selected_agent": {
                             "type": "string",
-                            "description": "The name of the selected agent"
+                            "description": "The name of the selected agent. Selected agent cannot be None."
                         },
                         "confidence": {
                             "type": "number",
@@ -55,36 +56,40 @@ class Classifier(ABC):
                         "reason": {
                             "type": "string",
                             "description": "Reason for the selected agent"
-                        }
+                        },
+
                     },
-                    "required": ["userinput", "selected_agent", "confidence", 'reason']
+                    "required": ["selected_agent", "confidence", 'reason'],
+
                 }
+
             }
         ]
         self.current_agent = ""
         self.current_status = ""
         self.flags = ""
+
         self.project_flow = """
-       
         **Genpod Development Team Workflow:**
-            The workflow begins when the user provides the initial input. Based on the *project status* flag, different team members take on specific roles and responsibilities.
-            1. **When Project Status is ‘NEW’:**   
-            If the *project status* is set to ‘NEW,’ the RAG agent must gather additional information required for further processing. This stage is crucial to ensure that all necessary data is collected before moving forward.
-            2. **When Project Status is ‘INITIAL’:**  
-            If the *project status* is ‘INITIAL,’ the Architect agent is responsible for preparing the requirements document, which defines the scope and serves as the blueprint for the next phases.
-            3. **When Project Status is ‘Monitoring’:**  
-            If the *project status* is ‘Monitoring’ and the task status is ‘AWAITING,’ and the request was initiated by the Architect, the RAG agent must provide the necessary information. If the RAG agent cannot provide this information, it should be gathered from a human resource.
-            4. **When Project Status is ‘Executing’:**  
-            - If there are no planned tasks available, the Planner is responsible for preparing them.  
-            - If planned tasks are available, the Coder and Tester must complete them.
-            5. **Special Considerations in the ‘Executing’ Status:**  
-            - If the task status is ‘DONE’ or ‘ABANDONED,’ the Supervisor can assign new tasks for the Planner.  
-            - If the task status is ‘IN PROGRESS,’ the Coder and Tester are responsible for completing the available tasks.  
-            - If the task involves *is_function_generation_required*, the Tester must first complete the unit test cases, after which the Coder can finish the task. If function generation is not required, the Coder can complete the task independently.
-            6. **When Project Status is ‘DONE’:**  
-            When the *project status* is set to ‘DONE,’ the system should trigger an automatic update to reflect the completion of all tasks.
-                    
-                    """
+        The workflow begins when the user provides the initial input. Based on the *project status* flag, different team members take on specific roles and responsibilities.
+        1. **When Project Status is 'NEW':**   
+        If the *project status* is set to 'NEW', the RAG agent must gather additional information required for further processing. This stage is crucial to ensure that all necessary data is collected before moving forward.
+        2. **When Project Status is 'INITIAL':**  
+        If the *project status* is 'INITIAL', the Architect agent is responsible for preparing the requirements document, which defines the scope and serves as the blueprint for the next phases.
+        3. **When Project Status is 'Monitoring':**  
+        If the *project status* is 'Monitoring' and the task status is 'AWAITING', and the request was initiated by the Architect (calling agent), the RAG agent must provide the necessary information. If the RAG agent cannot provide this information, it should be gathered from a human resource.
+        4. **When Project Status is 'Executing':**  
+        - If  *are_planned_tasks_in_progress* is False, the Planner is responsible for preparing them.  
+        - If planned tasks is True, the Coder and Tester must complete them.
+        5. **Special Considerations in the 'Executing' Status:**  
+        - If the task status is 'DONE' or 'ABANDONED', the Supervisor can assign new tasks for the Planner.  
+        - If the task status is 'IN PROGRESS', the Coder and Tester are responsible for completing the available tasks.  
+        - If *is_function_generation_required* is True, the Tester must first complete the unit test cases, after which the Coder can finish the task. 
+        - Invoking call_test_code_generator due to Project Status is 'Executing' and Planned Task involving is_function_generation_required and is_test_code_generated.
+        - If function generation is not required and in the Planned Task  *is_code_generate* is False and PlannedTask Status is 'NEW',the Coder can complete the task independently. 
+        6. **When Project Status is 'DONE':**  
+        When the *project status* is set to 'DONE',the system should trigger an automatic update to reflect the completion of all tasks.
+         """
 
     def set_agents(self, agents: Dict[str, Agent]) -> None:
         self.agent_descriptions = "\n\n".join(f"{agent.agent_id}:{agent.description}"
@@ -105,12 +110,24 @@ class Classifier(ABC):
     def set_history(self, messages) -> None:
         self.history = self.format_messages(messages)
 
-    def set_additional_info(self, task_info, current_status, visited_agents, project_status, flags) -> None:
-        self.current_agent = task_info
-        self.current_status = current_status
-        self.visited_agents = visited_agents
-        self.project_status = project_status
-        self.flags = flags
+    def set_additional_info(self, state) -> None:
+        flags = []
+        self.current_agent = state['current_agent']
+        self.current_status = state['current_task'].task_status.value
+        self.visited_agents = state['visited_agents']
+        self.project_status = state['project_status'].value
+        if "current_planned_task" in state:
+            flags.append(
+                f"is_function_generation_required : {state['current_planned_task'].is_function_generation_required}")
+        if "current_planned_task" in state:
+            flags.append(
+                f"is_test_code_generated : {state['current_planned_task'].is_test_code_generated}")
+            flags.append(
+                f"is_code_generate : {state['current_planned_task'].is_code_generate}")
+        if "are_planned_tasks_in_progress" in state:
+            flags.append(
+                f"are_planned_tasks_in_progress : {state['are_planned_tasks_in_progress']}")
+        self.flags = "\n".join(flags)
 
     @staticmethod
     def replace_placeholders(template: str, variables) -> str:
@@ -194,9 +211,8 @@ class SupervisorClassifier(Classifier, SupervisorPrompts):
         return intent_classifier_result
 
     def classify(self, state: SupervisorState) -> ClassifierResult:
-        chat_history = state['messages'][-5:]
+        chat_history = state['messages'][-15:]
         self.set_history(chat_history)
-        self.set_additional_info(state['current_agent'], state['current_task'].task_status.value,
-                                 state['visited_agents'], state['project_status'].value)
+        self.set_additional_info(state)
 
         return self.process_request(state)

@@ -230,7 +230,7 @@ class ProjectAgents(Enum):
     tests_generator = AgentInfo(
         "Unit Tester",
         "TST_06",
-        alias="tests_generator",
+        alias="test_code_generator",
         description="Develops and executes unit test cases to ensure code quality and functionality."
     )
 
