@@ -1,15 +1,17 @@
 import ast
 import json
 from typing import TYPE_CHECKING, Dict, List, Tuple
-
+import time
 from langchain_openai import ChatOpenAI
 from pydantic import ValidationError
-
+from configs.database import get_client_local_db_file_path
+from database.database import Database
 
 from agents.agent.agent import Agent
 from agents.supervisor.supervisor_state import SupervisorState
 from agents.supervisor.classifier import SupervisorClassifier
 from configs.project_config import ProjectAgents
+from main import USER_ID
 from models.constants import ChatRoles, PStatus, Status
 from models.models import (PlannedTask, PlannedTaskQueue, RequirementsDocument,
                            Task, TaskQueue)
@@ -135,7 +137,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                         'question': req_query,
                         'max_hallucination': 3
                     })
-
                     rag_response = result['generation']
                     self.rag_cache.add(req_query, rag_response)
 
@@ -297,10 +298,17 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             else:
                 logger.debug("Cache miss for query: \n%s", question)
 
+                start_time = time.time()
+
                 additional_info = self.team.rag.invoke({
                     'question': question,
                     'max_hallucination': 3
                 })
+                end_time = time.time()
+                duration = end_time - start_time
+
+                self.save_execution_time(
+                    state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name)
 
                 result = additional_info['generation']
                 state['is_rag_query_answered'] = additional_info['query_answered']
@@ -1093,9 +1101,20 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         return state
 
+    def save_execution_time(self, state: SupervisorState, task_id, start_time, end_time, duration, agent_name):
+
+        # Save the metrics to the database
+        DATABASE_PATH = get_client_local_db_file_path()
+        db = Database(DATABASE_PATH)
+
+        metrics = db.metrics_table.insert(
+            state['project_id'], state['microservice_id'], task_id, start_time, end_time, duration, agent_name)
+
+        return metrics
+
     def delegator(self, state: SupervisorState) -> str:
         """
-        Delegates the tasks across the agents based on the current project status.
+        Delegates the tasks across the agents based on the current project status
 
         Parameters:
         state (SupervisorState): The current state of the project.
