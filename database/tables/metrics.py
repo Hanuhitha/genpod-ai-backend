@@ -21,7 +21,7 @@ class Metrics(Table):
     end_time: datetime
     duration: float
     agent_name: str
-    agent_id: int
+    agent_id: str
 
     def __init__(self, connection: sqlite3.Connection):
         """
@@ -50,7 +50,7 @@ class Metrics(Table):
             end_time DATETIME NOT NULL,
             duration FLOAT NOT NULL,
             agent_name TEXT NOT NULL,
-            agent_id INTEGER NOT NULL
+            agent_id TEXT NOT NULL
             
         );
         '''
@@ -68,7 +68,7 @@ class Metrics(Table):
             if cursor:
                 cursor.close()
 
-    def insert(self, project_id: str, microservice_id: str, task_id: str, start_time: str, end_time: str, duration: str, agent_name: str) -> Dict[str, Any]:
+    def insert(self, project_id: str, microservice_id: str, task_id: str, start_time: str, end_time: str, duration: str, agent_name: str, agent_id: str) -> Dict[str, Any]:
         """
         Inserts a new metric record into the table and returns it as a dictionary.
         """
@@ -80,11 +80,12 @@ class Metrics(Table):
             start_time=start_time,
             end_time=end_time,
             duration=duration,
-            agent_name=agent_name
+            agent_name=agent_name,
+            agent_id=agent_id
         )
 
     def __valid_columns__(self) -> set:
         """
         Returns the set of valid columns for the metrics table.
         """
-        return {"id", "project_id", "microservice_id", "task_id", "start_time", "end_time", "duration", "agent_name"}
+        return {"id", "project_id", "microservice_id", "task_id", "start_time", "end_time", "duration", "agent_name", "agent_id"}

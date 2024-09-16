@@ -280,8 +280,19 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             # Potential issue: As the cache grows, performance issues may arise, significantly slowing down the
             # application since we are dealing with strings and performing many string comparisons.
             # Solution: Choose and implement algorithms like LRU (Least Recently Used) or LFU (Least Frequently Used).
+            start_time = time.time()
+
             state['rag_cache_queries'], self.rag_cache_building = self.build_rag_cache(
                 state['original_user_input'])
+
+            end_time = time.time()
+            duration = end_time - start_time
+            logger.info(
+                f"Task '{self.team.rag.member_name}' took {duration} seconds")
+
+            self.save_execution_time(
+                state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
+
             self.is_rag_cache_created = True
             logger.info(
                 f"{self.team.rag.member_name}: The RAG cache has been created. The following queries were used during the process: {state['rag_cache_queries']}")
@@ -306,9 +317,11 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 })
                 end_time = time.time()
                 duration = end_time - start_time
+                logger.info(
+                    f"Task '{self.team.rag.member_name}' took {duration} seconds")
 
                 self.save_execution_time(
-                    state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name)
+                    state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
 
                 result = additional_info['generation']
                 state['is_rag_query_answered'] = additional_info['query_answered']
@@ -382,6 +395,8 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             logger.info(
                 f"{self.team.architect.member_name}: Started  working on requirements document.")
 
+            start_time = time.time()
+
             architect_result = self.team.architect.invoke({
                 'current_task': state['current_task'],
                 'project_status': state['project_status'],
@@ -391,6 +406,13 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 'license_text': state['license_text'],
                 'messages': []
             })
+            end_time = time.time()
+            duration = end_time - start_time
+            logger.info(
+                f"Task '{self.team.architect.member_name}' took {duration} seconds")
+
+            self.save_execution_time(
+                state['current_task'].task_id, start_time, end_time, duration, self.team.architect.member_name, self.team.architect.member_id)
 
             # if the task_status is done that mean architect has generated all the required information for team
             if architect_result['current_task'].task_status == Status.DONE:
@@ -417,6 +439,8 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             # Need to query Architect to get additional information for another agent which will be present in called agent and that will never be updated when returning
             logger.info("----------Querying Architect----------")
 
+            start_time = time.time()
+
             architect_result = self.team.architect.invoke({
                 'current_task': state['current_task'],
                 'project_status': state['project_status'],
@@ -426,6 +450,13 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 'license_text': state['license_text'],
                 'messages': []
             })
+            end_time = time.time()
+            duration = end_time - start_time
+            logger.info(
+                f"Task '{self.team.architect.member_name}' took {duration} seconds")
+
+            self.save_execution_time(
+                state['current_task'].task_id, start_time, end_time, duration, self.team.architect.member_name, self.team.architect.member_id)
 
             logger.info("----------Response from Architect Agent----------")
             logger.info("Architect Response: %r",
@@ -459,6 +490,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         logger.info("---------- Calling Coder ----------")
         state['current_agent'] = self.team.coder.member_name
 
+        start_time = time.time()
         coder_result = self.team.coder.invoke({
             'project_name': state['project_name'],
             'project_folder_strucutre': state['project_folder_strucutre'],
@@ -472,6 +504,14 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             'current_planned_task': state['current_planned_task'],
             'messages': state['messages']
         })
+
+        end_time = time.time()
+        duration = end_time - start_time
+        logger.info(
+            f"Task '{self.team.coder.member_name}' took {duration} seconds")
+
+        self.save_execution_time(
+            state['current_task'].task_id, start_time, end_time, duration, self.team.coder.member_name, self.team.coder.member_id)
 
         state['current_planned_task'] = coder_result['current_planned_task']
 
@@ -509,6 +549,8 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         logger.info("---------- Calling Test Code Generator ----------")
         state['current_agent'] = self.team.tests_generator.member_name
 
+        start_time = time.time()
+
         test_coder_result = self.team.tests_generator.invoke({
             'project_name': state['project_name'],
             'project_folder_strucutre': state['project_folder_strucutre'],
@@ -520,6 +562,14 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             'current_planned_task': state['current_planned_task'],
             'messages': []
         })
+
+        end_time = time.time()
+        duration = end_time - start_time
+        logger.info(
+            f"Task '{self.team.tests_generator.member_name}' took {duration} seconds")
+
+        self.save_execution_time(
+            state['current_task'].task_id, start_time, end_time, duration, self.team.tests_generator.member_name, self.team.tests_generator.member_id)
 
         state['current_planned_task'] = test_coder_result['current_planned_task']
 
@@ -955,10 +1005,20 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         logger.info("----------Calling Planner----------")
 
+        start_time = time.time()
+
         planner_result = self.team.planner.invoke({
             'current_task': state['current_task'],
             'project_path': state['project_path']
         })
+
+        end_time = time.time()
+        duration = end_time - start_time
+        logger.info(
+            f"Task '{self.team.planner.member_name}' took {duration} seconds")
+
+        self.save_execution_time(
+            state['current_task'].task_id, start_time, end_time, duration, self.team.planner.member_name, self.team.planner.member_id)
 
         # TODO - LOW: Perfromance, Memory, Code Enhancement
         # Currenlty planner is returning list of task thorugh `response`
@@ -1101,17 +1161,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         return state
 
-    def save_execution_time(self, state: SupervisorState, task_id, start_time, end_time, duration, agent_name):
-
-        # Save the metrics to the database
-        DATABASE_PATH = get_client_local_db_file_path()
-        db = Database(DATABASE_PATH)
-
-        metrics = db.metrics_table.insert(
-            state['project_id'], state['microservice_id'], task_id, start_time, end_time, duration, agent_name)
-
-        return metrics
-
     def delegator(self, state: SupervisorState) -> str:
         """
         Delegates the tasks across the agents based on the current project status
@@ -1215,3 +1264,26 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         # logger.info(f"Delegator: Invoking update_state.")
         # return "update_state"
+
+    def save_execution_time(self, state: SupervisorState, task_id, start_time, end_time, duration, agent_name, agent_id) -> int:
+
+        try:
+            # Save the metrics to the database
+            DATABASE_PATH = get_client_local_db_file_path()
+            db = Database(DATABASE_PATH)
+
+            metrics = db.metrics_table.insert(
+                state['project_id'],
+                state['microservice_id'],
+                task_id,
+                start_time,
+                end_time,
+                duration,
+                agent_name,
+                agent_id)
+
+            return metrics
+
+        except Exception as e:
+            logger.error(f"Failed to save execution time. Error: {e}")
+            return None
