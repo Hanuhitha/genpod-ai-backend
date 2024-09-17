@@ -11,7 +11,6 @@ from agents.agent.agent import Agent
 from agents.supervisor.supervisor_state import SupervisorState
 from agents.supervisor.classifier import SupervisorClassifier
 from configs.project_config import ProjectAgents
-from main import USER_ID
 from models.constants import ChatRoles, PStatus, Status
 from models.models import (PlannedTask, PlannedTaskQueue, RequirementsDocument,
                            Task, TaskQueue)
@@ -291,7 +290,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 f"Task '{self.team.rag.member_name}' took {duration} seconds")
 
             self.save_execution_time(
-                state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
+                state, state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
 
             self.is_rag_cache_created = True
             logger.info(
@@ -321,7 +320,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                     f"Task '{self.team.rag.member_name}' took {duration} seconds")
 
                 self.save_execution_time(
-                    state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
+                    state, state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
 
                 result = additional_info['generation']
                 state['is_rag_query_answered'] = additional_info['query_answered']
@@ -412,7 +411,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 f"Task '{self.team.architect.member_name}' took {duration} seconds")
 
             self.save_execution_time(
-                state['current_task'].task_id, start_time, end_time, duration, self.team.architect.member_name, self.team.architect.member_id)
+                state, state['current_task'].task_id, start_time, end_time, duration, self.team.architect.member_name, self.team.architect.member_id)
 
             # if the task_status is done that mean architect has generated all the required information for team
             if architect_result['current_task'].task_status == Status.DONE:
@@ -456,7 +455,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 f"Task '{self.team.architect.member_name}' took {duration} seconds")
 
             self.save_execution_time(
-                state['current_task'].task_id, start_time, end_time, duration, self.team.architect.member_name, self.team.architect.member_id)
+                state, state['current_task'].task_id, start_time, end_time, duration, self.team.architect.member_name, self.team.architect.member_id)
 
             logger.info("----------Response from Architect Agent----------")
             logger.info("Architect Response: %r",
@@ -511,7 +510,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             f"Task '{self.team.coder.member_name}' took {duration} seconds")
 
         self.save_execution_time(
-            state['current_task'].task_id, start_time, end_time, duration, self.team.coder.member_name, self.team.coder.member_id)
+            state, state['current_task'].task_id, start_time, end_time, duration, self.team.coder.member_name, self.team.coder.member_id)
 
         state['current_planned_task'] = coder_result['current_planned_task']
 
@@ -569,7 +568,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             f"Task '{self.team.tests_generator.member_name}' took {duration} seconds")
 
         self.save_execution_time(
-            state['current_task'].task_id, start_time, end_time, duration, self.team.tests_generator.member_name, self.team.tests_generator.member_id)
+            state, state['current_task'].task_id, start_time, end_time, duration, self.team.tests_generator.member_name, self.team.tests_generator.member_id)
 
         state['current_planned_task'] = test_coder_result['current_planned_task']
 
@@ -868,6 +867,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
                 # All task must have been finished.
                 if next_task is None:
+
                     # TODO: Need to consider the Abandoned Tasks. Before considering the task as complete.
                     state['project_status'] = PStatus.DONE
                 else:
@@ -1018,7 +1018,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             f"Task '{self.team.planner.member_name}' took {duration} seconds")
 
         self.save_execution_time(
-            state['current_task'].task_id, start_time, end_time, duration, self.team.planner.member_name, self.team.planner.member_id)
+            state, state['current_task'].task_id, start_time, end_time, duration, self.team.planner.member_name, self.team.planner.member_id)
 
         # TODO - LOW: Perfromance, Memory, Code Enhancement
         # Currenlty planner is returning list of task thorugh `response`
@@ -1286,4 +1286,3 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         except Exception as e:
             logger.error(f"Failed to save execution time. Error: {e}")
-            return None

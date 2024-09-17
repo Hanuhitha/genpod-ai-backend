@@ -69,7 +69,7 @@ class AgentMember(Generic[GenericAgentState, GenericAgentGraph]):
 
         return self.graph.app.stream(input, graph_config)
 
-    def invoke(self, input: Dict[str, Any] | Any) -> GenericAgentState: 
+    def invoke(self, input: Dict[str, Any] | Any) -> GenericAgentState:
         """
         """
         graph_config = {

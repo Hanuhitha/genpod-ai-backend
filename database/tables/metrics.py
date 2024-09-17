@@ -22,6 +22,8 @@ class Metrics(Table):
     duration: float
     agent_name: str
     agent_id: str
+    created_at: datetime
+    updated_at: datetime
 
     def __init__(self, connection: sqlite3.Connection):
         """
@@ -46,12 +48,13 @@ class Metrics(Table):
             project_id INTEGER NOT NULL,
             microservice_id INTEGER NOT NULL,
             task_id INTEGER NOT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
             start_time DATETIME NOT NULL,
             end_time DATETIME NOT NULL,
             duration FLOAT NOT NULL,
             agent_name TEXT NOT NULL,
             agent_id TEXT NOT NULL
-            
         );
         '''
         try:
@@ -88,4 +91,4 @@ class Metrics(Table):
         """
         Returns the set of valid columns for the metrics table.
         """
-        return {"id", "project_id", "microservice_id", "task_id", "start_time", "end_time", "duration", "agent_name", "agent_id"}
+        return {"id", "project_id", "microservice_id", "task_id", "created_at", "updated_at", "start_time", "end_time", "duration", "agent_name", "agent_id"}

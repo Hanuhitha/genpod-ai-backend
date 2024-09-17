@@ -43,6 +43,7 @@ class Database():
         self.projects_table = Projects(self.connection)
         self.microservices_table = Microservices(self.connection)
         self.sessions_table = Sessions(self.connection)
+        self.metrics_table = Metrics(self.connection)
 
     def connect(self) -> sqlite3.Connection:
         """
@@ -82,6 +83,9 @@ class Database():
 
             # Create sessions table
             self.sessions_table.create()
+
+            # Create metrics table
+            self.metrics_table.create()
 
             self.connection.commit()
         except sqlite3.Error as sqe:
