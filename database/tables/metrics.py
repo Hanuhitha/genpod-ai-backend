@@ -19,7 +19,7 @@ class Metrics(Table):
     task_id: int
     start_time: datetime
     end_time: datetime
-    duration: float
+    duration: int
     agent_name: str
     agent_id: str
     created_at: datetime
@@ -52,7 +52,7 @@ class Metrics(Table):
             updated_at DATETIME NOT NULL,
             start_time DATETIME NOT NULL,
             end_time DATETIME NOT NULL,
-            duration FLOAT NOT NULL,
+            duration INTEGER NOT NULL,
             agent_name TEXT NOT NULL,
             agent_id TEXT NOT NULL
         );

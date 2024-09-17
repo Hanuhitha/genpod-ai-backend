@@ -16,6 +16,7 @@ from models.models import (PlannedTask, PlannedTaskQueue, RequirementsDocument,
                            Task, TaskQueue)
 from models.supervisor import QueryList
 from prompts.supervisor import SupervisorPrompts
+from utils.decorators.decorator import measure_execution_time
 from utils.fuzzy_rag_cache import FuzzyRAGCache
 from utils.logs.logging_utils import logger
 
@@ -252,6 +253,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         return state
 
+    @measure_execution_time(lambda self: self.team.rag)
     def call_rag(self, state: SupervisorState) -> SupervisorState:
         """
             Gathers the required information from vector DB.
@@ -279,18 +281,18 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             # Potential issue: As the cache grows, performance issues may arise, significantly slowing down the
             # application since we are dealing with strings and performing many string comparisons.
             # Solution: Choose and implement algorithms like LRU (Least Recently Used) or LFU (Least Frequently Used).
-            start_time = time.time()
+            # start_time = time.time()
 
             state['rag_cache_queries'], self.rag_cache_building = self.build_rag_cache(
                 state['original_user_input'])
 
-            end_time = time.time()
-            duration = end_time - start_time
-            logger.info(
-                f"Task '{self.team.rag.member_name}' took {duration} seconds")
+            # end_time = time.time()
+            # duration = end_time - start_time
+            # logger.info(
+            #     f"Task '{self.team.rag.member_name}' took {duration} seconds")
 
-            self.save_execution_time(
-                state, state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
+            # self.save_execution_time(
+            #     state, state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
 
             self.is_rag_cache_created = True
             logger.info(
@@ -308,19 +310,19 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             else:
                 logger.debug("Cache miss for query: \n%s", question)
 
-                start_time = time.time()
+                # start_time = time.time()
 
                 additional_info = self.team.rag.invoke({
                     'question': question,
                     'max_hallucination': 3
                 })
-                end_time = time.time()
-                duration = end_time - start_time
-                logger.info(
-                    f"Task '{self.team.rag.member_name}' took {duration} seconds")
+                # end_time = time.time()
+                # duration = end_time - start_time
+                # logger.info(
+                #     f"Task '{self.team.rag.member_name}' took {duration} seconds")
 
-                self.save_execution_time(
-                    state, state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
+                # self.save_execution_time(
+                #     state, state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
 
                 result = additional_info['generation']
                 state['is_rag_query_answered'] = additional_info['query_answered']
@@ -381,6 +383,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         return {**state}
 
+    @measure_execution_time(lambda self: self.team.architect)
     def call_architect(self, state: SupervisorState) -> SupervisorState:
         """
         Prepares requirements document and answers queries for the team members.
@@ -478,6 +481,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         return state
 
+    @measure_execution_time(lambda self: self.team.coder)
     def call_coder(self, state: SupervisorState) -> SupervisorState:
         """
         """
@@ -536,6 +540,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         return state
 
+    @measure_execution_time(lambda self: self.team.tests_generator)
     def call_test_code_generator(self, state: SupervisorState) -> SupervisorState:
         """
         """
@@ -999,6 +1004,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         else:
             return state
 
+    @measure_execution_time(lambda self: self.team.planner)
     def call_planner(self, state: SupervisorState) -> SupervisorState:
         """
         """
@@ -1122,6 +1128,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         return state
 
+    @measure_execution_time(lambda self: self.team.human)
     def call_human(self, state: SupervisorState) -> SupervisorState:
         # Display relevant information to the human
         # pprint(f"----------Supervisor current state----------\n{state}")
@@ -1264,25 +1271,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         # logger.info(f"Delegator: Invoking update_state.")
         # return "update_state"
+    def save_execution_time(state: SupervisorState, task_id, start_time, end_time, duration, agent_name, agent_id) -> int:
 
-    def save_execution_time(self, state: SupervisorState, task_id, start_time, end_time, duration, agent_name, agent_id) -> int:
-
-        try:
-            # Save the metrics to the database
-            DATABASE_PATH = get_client_local_db_file_path()
-            db = Database(DATABASE_PATH)
-
-            metrics = db.metrics_table.insert(
-                state['project_id'],
-                state['microservice_id'],
-                task_id,
-                start_time,
-                end_time,
-                duration,
-                agent_name,
-                agent_id)
-
-            return metrics
-
-        except Exception as e:
-            logger.error(f"Failed to save execution time. Error: {e}")
+        pass
