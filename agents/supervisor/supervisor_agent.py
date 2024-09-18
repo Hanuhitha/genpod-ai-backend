@@ -281,18 +281,8 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             # Potential issue: As the cache grows, performance issues may arise, significantly slowing down the
             # application since we are dealing with strings and performing many string comparisons.
             # Solution: Choose and implement algorithms like LRU (Least Recently Used) or LFU (Least Frequently Used).
-            # start_time = time.time()
-
             state['rag_cache_queries'], self.rag_cache_building = self.build_rag_cache(
                 state['original_user_input'])
-
-            # end_time = time.time()
-            # duration = end_time - start_time
-            # logger.info(
-            #     f"Task '{self.team.rag.member_name}' took {duration} seconds")
-
-            # self.save_execution_time(
-            #     state, state['current_task'].task_id, start_time, end_time, duration, self.team.rag.member_name, self.team.rag.member_id)
 
             self.is_rag_cache_created = True
             logger.info(
@@ -397,8 +387,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             logger.info(
                 f"{self.team.architect.member_name}: Started  working on requirements document.")
 
-            start_time = time.time()
-
             architect_result = self.team.architect.invoke({
                 'current_task': state['current_task'],
                 'project_status': state['project_status'],
@@ -408,13 +396,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 'license_text': state['license_text'],
                 'messages': []
             })
-            end_time = time.time()
-            duration = end_time - start_time
-            logger.info(
-                f"Task '{self.team.architect.member_name}' took {duration} seconds")
-
-            self.save_execution_time(
-                state, state['current_task'].task_id, start_time, end_time, duration, self.team.architect.member_name, self.team.architect.member_id)
 
             # if the task_status is done that mean architect has generated all the required information for team
             if architect_result['current_task'].task_status == Status.DONE:
@@ -441,8 +422,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             # Need to query Architect to get additional information for another agent which will be present in called agent and that will never be updated when returning
             logger.info("----------Querying Architect----------")
 
-            start_time = time.time()
-
             architect_result = self.team.architect.invoke({
                 'current_task': state['current_task'],
                 'project_status': state['project_status'],
@@ -452,13 +431,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 'license_text': state['license_text'],
                 'messages': []
             })
-            end_time = time.time()
-            duration = end_time - start_time
-            logger.info(
-                f"Task '{self.team.architect.member_name}' took {duration} seconds")
-
-            self.save_execution_time(
-                state, state['current_task'].task_id, start_time, end_time, duration, self.team.architect.member_name, self.team.architect.member_id)
 
             logger.info("----------Response from Architect Agent----------")
             logger.info("Architect Response: %r",
@@ -493,7 +465,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         logger.info("---------- Calling Coder ----------")
         state['current_agent'] = self.team.coder.member_name
 
-        start_time = time.time()
         coder_result = self.team.coder.invoke({
             'project_name': state['project_name'],
             'project_folder_strucutre': state['project_folder_strucutre'],
@@ -507,14 +478,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             'current_planned_task': state['current_planned_task'],
             'messages': state['messages']
         })
-
-        end_time = time.time()
-        duration = end_time - start_time
-        logger.info(
-            f"Task '{self.team.coder.member_name}' took {duration} seconds")
-
-        self.save_execution_time(
-            state, state['current_task'].task_id, start_time, end_time, duration, self.team.coder.member_name, self.team.coder.member_id)
 
         state['current_planned_task'] = coder_result['current_planned_task']
 
@@ -553,8 +516,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         logger.info("---------- Calling Test Code Generator ----------")
         state['current_agent'] = self.team.tests_generator.member_name
 
-        start_time = time.time()
-
         test_coder_result = self.team.tests_generator.invoke({
             'project_name': state['project_name'],
             'project_folder_strucutre': state['project_folder_strucutre'],
@@ -566,14 +527,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             'current_planned_task': state['current_planned_task'],
             'messages': []
         })
-
-        end_time = time.time()
-        duration = end_time - start_time
-        logger.info(
-            f"Task '{self.team.tests_generator.member_name}' took {duration} seconds")
-
-        self.save_execution_time(
-            state, state['current_task'].task_id, start_time, end_time, duration, self.team.tests_generator.member_name, self.team.tests_generator.member_id)
 
         state['current_planned_task'] = test_coder_result['current_planned_task']
 
@@ -652,14 +605,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             # If the task is marked as done, it means the RAG agent has gathered the additional information
             # needed for the team to begin the project.
 
-            # state['messages'] += [
-            #     (
-            #         ChatRoles.AI,
-            #         " When the project status is 'NEW',The RAG Agent task is complete. The next step is to involve the architect to generate the requirements document for the team. If the task is marked as done, it means the RAG agent has gathered the additional information needed for the team to begin the project."
-            #     )
-
-            # ]
-
             if state['current_task'].task_status == Status.DONE:
                 if self.is_initial_additional_info_ready:
                     state['project_status'] = PStatus.INITIAL
@@ -673,20 +618,11 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                     )
 
                     state['messages'] += [
-                        # (
-                        #     ChatRoles.AI,
-                        #     "RAG agent has gathered the additional information."
-                        # ),
 
                         (
                             ChatRoles.AI,
                             " Once the project is initiated, the architect gathers requirements, and if additional information is needed, RAG is used to assist during this phase."
                         ),
-                        # (
-
-                        #     ChatRoles.AI,
-                        #     " When the project is in the 'INITIAL' phase: 1. The architect has either completed their tasks or is waiting for additional information. If the architect has completed their tasks: Change the project status to 'EXECUTING' and proceed with the next steps. If the architect is still waiting for additional information: - Change the project status to 'MONITORING' and continue monitoring the situation."
-                        # ),
                         (
                             ChatRoles.AI,
                             "A New task has been created for the Architect agent"
@@ -750,10 +686,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                         ChatRoles.AI,
                         "Call RAG agent now to gather additional information."
                     ),
-                    # (
-                    #     ChatRoles.AI,
-                    #     " When the project status is 'MONITORING, the current agent is awaiting and needs help of other agent to work"
-                    # )
                 ]
 
                 logger.info(
@@ -808,51 +740,8 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             # all planned tasks were done.
             # Call Planner to prepare planned tasks.
 
-            # state['messages'] += [
-            #     (
-            #         ChatRoles.AI,
-            #         "Project is in EXECUTING status. "
-            #     ),
-
-            #     (
-            #         ChatRoles.AI,
-            #         "Planner can take initiative and prepare the tasks for the team."
-            #     ),
-
-            # (
-            #     ChatRoles.AI,
-            #     """ If are_planned_tasks_in_progress {are_planned_tasks_in_progress} is False
-            #                 Action: The Planner should be called to prepare and break down the tasks.
-            #                 Agent: call_planner."""
-            # ),
-            # ]
-
             try:
                 state['tasks'].update_task(state['current_task'])
-                # state['messages'] += [
-
-                #     (
-                #         ChatRoles.AI,
-                #         " If no tasks are available, the Planner is responsible for creating new ones."
-
-                #     ),
-                #     (
-                #         ChatRoles.AI,
-                #         "If planned tasks are in progress, Coder and Tester will complete them."
-                #     ),
-                #     (
-                #         ChatRoles.AI,
-                #         "If function generation is required and test code has not been generated, Test Code Generator will be called."
-                #     ),
-                #     (
-                #         ChatRoles.AI,
-                #         "If test code is already generated, proceed to code generation with the Coder."
-                #     ),
-                #     (
-                #         ChatRoles.AI,
-                #         "If the task is done or abandoned, Supervisor will assign new tasks for the Planner."
-                #     )
-                # ]
 
             except Exception as e:
                 logger.error(
@@ -884,16 +773,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                     # In Super State and Task as task will persisted in DB.
                     state['current_task'].additional_info = requirements_doc + \
                         '\n' + state['rag_retrieval']
-                    # state['messages'] += [
-                    #     (
-                    #         ChatRoles.AI,
-                    #         "Task is DONE or ABANDONED, moving to the next task."
-                    #     ),
-                    # (
-                    #     ChatRoles.AI,
-                    #     f"Next task is: {state['current_task'].description}"
-                    # )
-                    # ]
+
             elif state['current_task'].task_status == Status.AWAITING:
                 # Planner needs additional information
                 # Architect was responsible for answering the query if not then rag comes into play.
@@ -940,39 +820,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                     else:
                         state['current_planned_task'] = next_planned_task
                         self.are_planned_tasks_in_progress = True
-                        # state['messages'] += [
 
-                        # (
-                        #     ChatRoles.AI,
-                        #     """ If are_planned_tasks_in_progress is False
-                        #     Action: The Planner should be called to prepare and break down the tasks.
-                        #     Agent: call_planner."""
-                        # ),
-                        # (
-                        #     ChatRoles.AI,
-                        #     "Moving to the next planned task."
-                        # ),
-                        # (
-                        #     ChatRoles.AI,
-                        #     f"Next planned task: {state['current_planned_task'].description}"
-                        # ),
-                        # (
-                        #     ChatRoles.AI,
-                        #     "Checking if function generation is required for the next planned task."
-                        # ),
-                        # (
-                        #     ChatRoles.AI,
-                        #     "If function generation is required and test code is not yet generated, call the Test Code Generator."
-                        # ),
-                        # (
-                        #     ChatRoles.AI,
-                        #     "If test code is already generated, proceed to check if code generation is required."
-                        # ),
-                        # (
-                        #     ChatRoles.AI,
-                        #     "If code generation is required, Coder will be called to complete the task."
-                        # ),
-                        # ]
                         self.calling_agent = self.team.supervisor.member_id
 
             return state
@@ -1011,20 +859,10 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         logger.info("----------Calling Planner----------")
 
-        start_time = time.time()
-
         planner_result = self.team.planner.invoke({
             'current_task': state['current_task'],
             'project_path': state['project_path']
         })
-
-        end_time = time.time()
-        duration = end_time - start_time
-        logger.info(
-            f"Task '{self.team.planner.member_name}' took {duration} seconds")
-
-        self.save_execution_time(
-            state, state['current_task'].task_id, start_time, end_time, duration, self.team.planner.member_name, self.team.planner.member_id)
 
         # TODO - LOW: Perfromance, Memory, Code Enhancement
         # Currenlty planner is returning list of task thorugh `response`
@@ -1082,31 +920,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                     )
                 )
 
-                # state['messages'] += [
-
-                #     (
-                #         ChatRoles.AI,
-                #         f"""
-                #         If is_function_generation_required {state['current_planned_task'].is_function_generation_required} is True:
-                #             Check if is_test_code_generated {state['current_planned_task'].is_test_code_generated} is False - If false then
-                #                 Action: The Tester must complete the test code generation before proceeding further.
-                #                 Agent: call_test_code_generator.
-                #             If is_test_code_generated {state['current_planned_task'].is_test_code_generated} is True:
-                #                 Action: Proceed to the next step.
-                #         """
-                #     ),
-
-                #     (
-                #         ChatRoles.AI,
-                #         f"""
-                #         If {state['current_planned_task'].is_code_generate} is False and PlannedTask {state['planned_tasks'].task_status} is NEW :
-                #             Action: The Coder can complete the task independently.
-                #             Agent: call_coder.
-
-                #         """
-                #     ),
-                # ]
-
             state['agent_status'] = f"{self.team.planner.member_name} built the work packages"
             self.called_agent = self.team.planner.member_id
             self.responses[self.team.planner.member_id].append(
@@ -1128,7 +941,6 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         return state
 
-    @measure_execution_time(lambda self: self.team.human)
     def call_human(self, state: SupervisorState) -> SupervisorState:
         # Display relevant information to the human
         # pprint(f"----------Supervisor current state----------\n{state}")
@@ -1179,22 +991,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         str: The next action to be taken based on the project status.
         """
 
-        # if state['project_status'] == PStatus.NEW:
-        #     # Project has been received by the team.
-        #     # RAG(team member) now need to gather additonal information for the project
-        #     # additional information? yep a more detailed information about the project.
-        #     # user input would be to vague to start working on the project and results in a
-        #     # more generic output. so we need to more specific on what user is expecting.
-        #     # RAG holds the some standards documents and it fetches the relevant information related
-        #     # to the project to help team members efficient and qualified output.
-
-        #     logger.info(
-        #         f"Delegator: Invoking call_rag due to Project Status: {PStatus.NEW}")
-        #     return 'call_rag'
-
         if state['project_status'].value != PStatus.HALTED.value:
-            # if state['current_task'].task_status == Status.DONE and state['project_status'] == PStatus.EXECUTING:
-            #     'call_supervisor'
             classifier_output = self.classifier.classify(state)
             if classifier_output.selected_agent == None:
                 reason = classifier_output.reason
@@ -1211,66 +1008,3 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             return f'call_{classifier_output.selected_agent.alias}'
         else:
             return "update_state"
-
-        # elif state['project_status'] == PStatus.INITIAL:
-        #     # Once the project is ready with additional information needed. Team can starting working on the project
-        #     # architect is first team member who receives the project details and prepares the the requirements out of it.
-        #     # In this process if architect need aditional information thats when RAG comes into play at this phase of Project.
-        #     if self.is_initial_additional_info_ready:
-        #         logger.info(
-        #             f"Delegator: Invoking call_architect due to Project Status: {PStatus.INITIAL}")
-        #         return 'call_architect'
-        # elif state['project_status'] == PStatus.MONITORING:
-        #     # During query answering phase by agents PROJECT_STATUS will be in this phase
-
-        #     # RAG is the source for the information. It can fetch relevant information from vector DB for the given query.
-        #     if state['current_task'].task_status == Status.AWAITING:
-        #         logger.info(
-        #             f"Delegator: Invoking call_rag due to Project Status: {PStatus.MONITORING} and Task Status: {Status.AWAITING}.")
-        #         return 'call_rag'
-        # elif state['project_status'] == PStatus.EXECUTING:
-        #     # During the execution phase, there are two key scenarios:
-        #     # 1. The planner breaks down complex tasks into smaller, manageable planned tasks.
-        #     # 2. Coder or tester completes the planned tasks.
-        #     #
-        #     # The `are_planned_tasks_in_progress` flag indicates whether there are any tasks in the planned tasks list.
-        #     # If this flag is True, it means that planned tasks are the current priority.
-        #     # If the list is empty, it signifies that there are no planned tasks, and any remaining tasks should be further broken down by the planner.
-        #     if self.are_planned_tasks_in_progress:
-        #         if state['current_planned_task'].is_function_generation_required:
-        #             if not state['current_planned_task'].is_test_code_generated:
-        #                 logger.info(
-        #                     f"Delegator: Invoking call_test_code_generator due to Project Status: {PStatus.EXECUTING} and PlannedTask involving is_function_generation_required and is_test_code_generated.")
-        #                 return 'call_test_code_generator'
-
-        #         # Other conditions like is_code_generated from PlannedTask object is also useful
-        #         # to figure out if coder has already completed the task.
-        #         if not state['current_planned_task'].is_code_generate:
-        #             logger.info(
-        #                 f"Delegator: Invoking call_code due to Project Status: {PStatus.EXECUTING} and PlannedTask Status: {Status.NEW}.")
-        #             return 'call_coder'
-        #     else:
-        #         if state['current_task'].task_status == Status.NEW:
-        #             logger.info(
-        #                 f"Delegator: Invoking call_planner due to Project Status: {PStatus.EXECUTING} and Task Status: {Status.NEW}.")
-        #             return 'call_planner'
-
-        #     # occurs when architect just completed the assigned task(generating documents and tasks)
-        #     # and now supervisor has to assign tasks for planner.
-        #     logger.info(
-        #         f"Delegator: Invoking call_supervisor due to Project Status: {PStatus.EXECUTING}.")
-        #     return 'call_supervisor'
-        # elif state['project_status'] == PStatus.HALTED:
-        #     # There may be situations where the LLM (Language Learning Model) cannot make a decision
-        #     # or where human input is required to proceed. This could be due to ambiguity or intentional
-        #     # scenarios that need human judgment to ensure progress.
-
-        #     logger.info(
-        #         f"Delegator: Invoking call_human due to Project Status: {PStatus.HALTED}.")
-        #     return 'update_state'  # 'Human'
-
-        # logger.info(f"Delegator: Invoking update_state.")
-        # return "update_state"
-    def save_execution_time(state: SupervisorState, task_id, start_time, end_time, duration, agent_name, agent_id) -> int:
-
-        pass
