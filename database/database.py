@@ -4,6 +4,7 @@ from database.tables.metrics import Metrics
 from database.tables.microservices import Microservices
 from database.tables.projects import Projects
 from database.tables.sessions import Sessions
+from database.tables.tokens import Tokens
 from utils.logs.logging_utils import logger
 
 
@@ -44,6 +45,7 @@ class Database():
         self.microservices_table = Microservices(self.connection)
         self.sessions_table = Sessions(self.connection)
         self.metrics_table = Metrics(self.connection)
+        self.tokens_table = Tokens(self.connection)
 
     def connect(self) -> sqlite3.Connection:
         """
@@ -86,6 +88,9 @@ class Database():
 
             # Create metrics table
             self.metrics_table.create()
+
+            #  Create tokens table
+            self.tokens_table.create()
 
             self.connection.commit()
         except sqlite3.Error as sqe:
