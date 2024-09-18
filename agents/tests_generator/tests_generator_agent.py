@@ -8,12 +8,11 @@ from langchain_openai import ChatOpenAI
 from typing_extensions import Literal
 
 from agents.agent.agent import Agent
-from agents.tests_generator.state import TestCoderState
+from agents.tests_generator.tests_generator_state import TestCoderState
 from configs.project_config import ProjectAgents
 from models.constants import ChatRoles, Status
-from models.skeleton import FunctionSkeleton
-from models.tests_generator import TestCodeGeneration
-from prompts.tests_generator import TestGeneratorPrompts
+from models.tests_generator_models import FunctionSkeleton, TestCodeGeneration
+from prompts.tests_generator_prompts import TestGeneratorPrompts
 from tools.code import CodeFileWriter
 from tools.shell import Shell
 from utils.logs.logging_utils import logger
@@ -388,7 +387,7 @@ class TestCoderAgent(Agent[TestCoderState, TestGeneratorPrompts]):
     #         time.sleep(20)
     #         # self.update_state_skeleton_generation(llm_response)
 
-    #         # TODO: maintian class variable (local to class) to hold the current task's CodeGenerationPlan object so that we are not gonna pass any extra
+    #         # : maintian class variable (local to class) to hold the current task's CodeGenerationPlan object so that we are not gonna pass any extra
     #         # details to the code generation prompt - look self.current_code_generation
         
     #         self.current_code_generation["taskType"] = llm_response['taskType']

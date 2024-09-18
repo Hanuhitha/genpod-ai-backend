@@ -3,7 +3,7 @@
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 
-from models.coder import CodeGenerationPlan
+from models.coder_models import CodeGenerationPlan
 
 
 class CoderPrompts:
@@ -13,10 +13,6 @@ class CoderPrompts:
         As a skilled programmer, you are an integral part of a team effort to deliver a comprehensive end-to-end 
         project as per the user's request. Your expertise is in developing well-documented, optimized, secure, and 
         production-ready code. Please focus solely on the assigned task.
-
-        Follow the function skeleton to generate the code in the specific files.
-
-        You will also be provided the unit test cases the functions that you are going to create should pass when completed
 
         You are currently working on the following project:
         Project Name: '{project_name}'
@@ -33,9 +29,6 @@ class CoderPrompts:
         Your strict compliance with these guidelines is essential for the successful and timely completion of the project. Let's 
         strive to maintain the standards set forth in the document and work collaboratively towards our common goal.
 
-        The project requires certain files and directories. The required folder structure for the project is as follows:
-        "{folder_structure}"
-
         Please adhere strictly to the restrictions for command execution. Do not use pipe or any command combining symbols. 
         If needed, pass them as separate commands. Only choose those that are necessary for task completion.
 
@@ -45,49 +38,24 @@ class CoderPrompts:
         Please refrain from responding with anything outside of the task's scope.
 
         The instructions for formatting are as follows:
-        {format_instructions}
+        "{format_instructions}"
 
         Now, here is your task to complete:
-        {task}.
+        "{task}"
 
-        These are the function skeletons for which you have to write the code to complete the functionality if the given task requires the function generation or it will be "No_skeleton".
-        {functions_skeleton}.
+        If you receive function skeletons and unit test cases, your task involves code generation. You are required to generate 
+        the code for the provided function skeletons only. The code should be developed to pass the unit test cases provided for 
+        reference, but do not include the unit test cases themselves in your response. Ensure that the code is well-documented, 
+        optimized, secure, and production-readys.
+        
+        Function Skeletons:
+        "{functions_skeleton}"
 
-        These are the unit test cases the functions you create should pass when executed if the given task requires the function generation or it will be "No UnitTests".:
-        {unit_test}
-
+        Unit Test cases:
+        "{unit_test_cases}"
         """,
-        input_variables=['project_name', 'project_path', 'requirements_document', 'folder_structure', 'error_message', 'task','functions_skeleton','unit_test'],
+        input_variables=['project_name', 'project_path', 'requirements_document', 'error_message', 'task', 'functions_skeleton', 'unit_test_cases'],
         partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=CodeGenerationPlan).get_format_instructions()
         }
-
-
     )
-    
-    # def code_generation_prompt(self) -> PromptTemplate:
-    #     """
-    #     """
-
-    #     return PromptTemplate(
-    #         template=self.CODE_GENERATION_TEMPLATE,
-    #         input_variables=[
-    #             "project_name", "requirements_document", "project_path", 
-    #             "folder_structure", "additional_information", "error_message",
-    #             "tools", "task"
-    #         ],
-    #         partial_variables= {
-    #             "format_instructions": PydanticOutputParser(pydantic_object=CoderModel).get_format_instructions()
-    #         }
-    #     )
-    
-    # def tool_selection_prompt(self, pydantic_model: BaseModel) -> ChatPromptTemplate:
-    #     """
-    #     """
-
-    #     return ChatPromptTemplate.from_template(
-    #         template=self.TOOL_SELECTION_TEMPLATE,
-    #         partial_variables = {
-    #             "format_instructions": PydanticOutputParser(pydantic_object=pydantic_model)
-    #         }
-    #     )

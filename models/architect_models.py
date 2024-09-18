@@ -19,10 +19,10 @@ class ProjectDetails(BaseModel):
         required=True
     )
 
-    project_folder_structure: str = Field(
-        description="The folder structure to be adhered to for the project",
-        required=True
-    )
+    # project_folder_structure: str = Field(
+    #     description="The folder structure to be adhered to for the project",
+    #     required=True
+    # )
 
 class TaskOutput(BaseModel):
     """

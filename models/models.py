@@ -6,7 +6,7 @@ capturing a specific set of information required for the project. These models
 are used to structure the data in a consistent and organized manner, enhancing 
 the readability and maintainability of the code.
 """
-from typing import Any, List
+from typing import Any, Iterator, List
 
 from pydantic import BaseModel, Field
 
@@ -58,6 +58,12 @@ class PlannedTask(BaseModel):
     A data model representing a task and its current state within a project
     or workflow.
     """
+    parent_task_id: str = Field(
+        description="A unique task id representing it parent task id",
+        default="",
+        required=True
+    )
+
     task_id: str = Field(
         description="A unique task id to track and access current task and previous tasks",
         default_factory=generate_task_id
@@ -82,7 +88,7 @@ class PlannedTask(BaseModel):
         default=False,
     )
 
-    is_code_generate: bool = Field(
+    is_code_generated: bool = Field(
         description="funtional code is generated or not",
         default=False
     )
@@ -237,6 +243,15 @@ class TaskQueue(BaseModel):
             return task
         return None
 
+    def get_all_tasks(self) -> List[Task]:
+        """
+        Returns a list of all tasks in the queue.
+        
+        Returns:
+            List[Task]: A list containing all Task objects in the queue.
+        """
+        return self.queue
+    
     def update_task(self, updated_task: Task) -> None:
         """
         Updates an existing task in the queue with the new values from the updated_task.
@@ -262,6 +277,24 @@ class TaskQueue(BaseModel):
         """
         return f"Tasks: {self.queue}, Next Index: {self.next}"
 
+    def __iter__(self) -> Iterator[Task]:
+        """
+        Returns an iterator over the tasks in the queue.
+        
+        Returns:
+            Iterator[Task]: An iterator for the tasks in the queue.
+        """
+        return iter(self.queue)
+
+    def __len__(self) -> int:
+        """
+        Returns the number of tasks in the queue.
+        
+        Returns:
+            int: The number of tasks in the queue.
+        """
+        return len(self.queue)
+    
 class PlannedTaskQueue(BaseModel):
     """
     A class to manage a queue of tasks with an index to keep track of the next task to process.
@@ -307,7 +340,16 @@ class PlannedTaskQueue(BaseModel):
             self.next += 1
             return task
         return None
-
+    
+    def get_all_tasks(self) -> List[PlannedTask]:
+        """
+        Returns a list of all tasks in the queue.
+        
+        Returns:
+            List[PlannedTask]: A list containing all PlannedTask objects in the queue.
+        """
+        return self.queue
+    
     def update_task(self, updated_task: PlannedTask) -> None:
         """
         Updates an existing task in the queue with the new values from the updated_task.
@@ -332,3 +374,21 @@ class PlannedTaskQueue(BaseModel):
             str: A string representing the current tasks and the index of the next task.
         """
         return f"Tasks: {self.queue}, Next Index: {self.next}"
+    
+    def __iter__(self) -> Iterator[PlannedTask]:
+        """
+        Returns an iterator over the tasks in the queue.
+        
+        Returns:
+            Iterator[PlannedTask]: An iterator for the tasks in the queue.
+        """
+        return iter(self.queue)
+
+    def __len__(self) -> int:
+        """
+        Returns the number of tasks in the queue.
+        
+        Returns:
+            int: The number of tasks in the queue.
+        """
+        return len(self.queue)

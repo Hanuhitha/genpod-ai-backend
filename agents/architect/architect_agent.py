@@ -12,12 +12,12 @@ from langchain_openai import ChatOpenAI
 from typing_extensions import Literal
 
 from agents.agent.agent import Agent
-from agents.architect.state import ArchitectState
+from agents.architect.architect_state import ArchitectState
 from configs.project_config import ProjectAgents
-from models.architect import ProjectDetails, QueryResult, TaskOutput
+from models.architect_models import ProjectDetails, QueryResult, TaskOutput
 from models.constants import ChatRoles, PStatus, Status
 from models.models import RequirementsDocument, Task
-from prompts.architect import ArchitectPrompts
+from prompts.architect_prompts import ArchitectPrompts
 from tools.code import CodeFileWriter
 from utils.logs.logging_utils import logger
 
@@ -335,7 +335,7 @@ class ArchitectAgent(Agent[ArchitectState, ArchitectPrompts]):
         self.last_visited_node = self.entry_node_name
         self.is_additional_info_requested = False
         
-        # TODO: Improvise conditional check with more details its too hard realize why its like that
+        # TODO: Improvise conditional check with more details its too hard understand the scenarios
         # add detailed comments as well
         if self.state['project_status'] == PStatus.INITIAL:
             self.mode = "document_generation"
@@ -652,22 +652,20 @@ class ArchitectAgent(Agent[ArchitectState, ArchitectPrompts]):
         try:
             response: ProjectDetails = self.project_details_chain.invoke({
                 "user_request": f"{self.state['original_user_input']}\n",
-                "folder_structure_document": f"{self.state['requirements_document'].directory_structure}\n",
                 "error_message": f"{self.error_message}\n",
             })
 
             self.has_error_occured = False
             self.error_message = ""
 
-            required_keys = ["project_name", "project_folder_structure"]
+            required_keys = ["project_name"]
             missing_keys = [key for key in required_keys if key not in response]
 
             if missing_keys:
                 raise KeyError(f"Missing keys: {missing_keys} in the response. Try Again!")
 
             self.state['project_name'] = response['project_name']
-            self.state['project_folder_structure'] = response['project_folder_structure']
-          
+
             self.add_message((
                 ChatRoles.USER,
                 f"{self.agent_name}: Project details have been successfully gathered!"

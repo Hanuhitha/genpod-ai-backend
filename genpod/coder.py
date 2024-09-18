@@ -1,5 +1,5 @@
-from agents.coder.graph import CoderGraph
-from agents.coder.state import CoderState
+from agents.coder.coder_graph import CoderGraph
+from agents.coder.coder_state import CoderState
 from configs.project_config import ProjectAgents, ProjectConfig
 from genpod.member import AgentMember
 

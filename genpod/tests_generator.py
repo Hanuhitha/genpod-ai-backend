@@ -1,5 +1,5 @@
-from agents.tests_generator.graph import TestCoderGraph
-from agents.tests_generator.state import TestCoderState
+from agents.tests_generator.tests_generator_graph import TestCoderGraph
+from agents.tests_generator.tests_generator_state import TestCoderState
 from configs.project_config import ProjectAgents, ProjectConfig
 from genpod.member import AgentMember
 

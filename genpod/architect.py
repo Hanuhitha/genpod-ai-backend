@@ -1,5 +1,5 @@
-from agents.architect.graph import ArchitectGraph
-from agents.architect.state import ArchitectState
+from agents.architect.architect_graph import ArchitectGraph
+from agents.architect.architect_state import ArchitectState
 from configs.project_config import ProjectAgents, ProjectConfig
 from genpod.member import AgentMember
 

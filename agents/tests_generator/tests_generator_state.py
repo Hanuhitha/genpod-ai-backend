@@ -8,7 +8,7 @@ from typing_extensions import Annotated, TypedDict
 from agents.agent.state import State
 from models.constants import ChatRoles
 from models.models import PlannedTask, Task
-from models.skeleton import FunctionSkeleton
+from models.tests_generator_models import FunctionSkeleton
 
 
 class TestCoderState(TypedDict):

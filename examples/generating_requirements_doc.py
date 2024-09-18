@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from langchain.schema.runnable import RunnablePassthrough
 from langchain_openai import ChatOpenAI
 
-from prompts.architect import ArchitectPrompts
+from prompts.architect_prompts import ArchitectPrompts
 
 load_dotenv()
 

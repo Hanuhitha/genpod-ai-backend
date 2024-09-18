@@ -4,7 +4,7 @@ in a shell execution context.
 """
 
 # List of all commands that can be executed
-COMMANDS = [
+COMMANDS = {
     'mkdir', 
     'docker', 
     'python', 
@@ -17,8 +17,9 @@ COMMANDS = [
     'cat', 
     'ls', 
     'curl',
-    'uvicorn'
-]
+    'uvicorn',
+    'dotnet'
+}
 
 # List of symbols that are used to join or pipe commands in a shell context
 SHELL_COMMANDS_JOIN_SYMBOLS= [
@@ -40,5 +41,6 @@ CODER_COMMANDS = [
     'pytest', 
     'touch', 
     'cat', 
-    'ls', 
+    'ls',
+    'dotnet'
 ]

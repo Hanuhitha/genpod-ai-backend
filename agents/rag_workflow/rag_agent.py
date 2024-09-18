@@ -6,7 +6,7 @@ from agents.agent.agent import Agent
 from agents.rag_workflow.rag_state import RAGState
 from configs.project_config import ProjectAgents
 from configs.supervisor_config import RAG_TRY_LIMIT
-from prompts.rag import RAGPrompts
+from prompts.rag_prompts import RAGPrompts
 from utils.logs.logging_utils import logger
 
 
@@ -24,9 +24,10 @@ class RAGAgent(Agent[RAGState, RAGPrompts]):
 
         self.iteration_count = RAG_TRY_LIMIT
         self.mismo_vectorstore = Chroma(
-                            collection_name = collection_name,
-                            persist_directory = persist_directory,
-                            embedding_function = OpenAIEmbeddings())
+            collection_name = collection_name,
+            persist_directory = persist_directory,
+            embedding_function = OpenAIEmbeddings()
+        )
         self.retriever = self.mismo_vectorstore.as_retriever(search_kwargs={'k': 20})
         
         # Document retrieval Grader chain

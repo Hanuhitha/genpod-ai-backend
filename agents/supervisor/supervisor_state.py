@@ -4,10 +4,11 @@ from typing import List
 from typing_extensions import Annotated, TypedDict
 
 from agents.agent.state import State
+from models.coder_models import CodeGenerationPlan
 from models.constants import ChatRoles, PStatus
 from models.models import (PlannedTask, PlannedTaskQueue, RequirementsDocument,
                            Task, TaskQueue)
-from models.skeleton import FunctionSkeleton
+from models.tests_generator_models import FunctionSkeleton
 
 
 class SupervisorState(TypedDict):
@@ -40,6 +41,12 @@ class SupervisorState(TypedDict):
     project_status: Annotated[
         PStatus,
         State.out_field("The status of the project being generated.")
+    ]
+
+    # @out
+    agents_status: Annotated[
+        str,
+        State.out_field()
     ]
 
     # @in
@@ -79,13 +86,6 @@ class SupervisorState(TypedDict):
     ]
 
     # @out
-    tasks: Annotated[
-        TaskQueue, 
-        List[Task],
-        State.out_field("The tasks create while generating the project.")
-    ]
-
-    # @out
     current_task: Annotated[
         Task,
         State.out_field("The current task that team is working on.")
@@ -98,13 +98,21 @@ class SupervisorState(TypedDict):
     ]
 
     # @out
-    requirements_document: Annotated[
-        RequirementsDocument,
-        State.inout_field(
-            "A comprehensive, well-structured document in markdown format that outlines "
-            "the project's requirements derived from the user's request. This serves as a "
-            "guide for the development process."
-        )
+    is_rag_query_answered : Annotated[
+        bool,
+        State.out_field("is query answered by rag agent.")
+    ]
+
+    # @out
+    rag_cache_queries: Annotated[
+        List[str],
+        State.out_field("Queries generated for rag cache")
+    ]
+
+    # @out
+    tasks: Annotated[
+        TaskQueue, 
+        State.out_field("The tasks create while generating the project.")
     ]
 
     # @inout
@@ -125,94 +133,6 @@ class SupervisorState(TypedDict):
         )
     ]
 
-    # @out
-    rag_cache_queries: Annotated[
-        List[str],
-        State.out_field("Queries generated for rag cache")
-    ]
-
-    # @out
-    is_rag_query_answered : Annotated[
-        bool,
-        State.out_field("is query answered by rag agent.")
-    ]
-
-    # @out
-    rag_retrieval: Annotated[
-        str,
-        State.out_field()
-    ]
-
-    # @out
-    agents_status: Annotated[
-        str,
-        State.out_field()
-    ]
-
-    # @out
-    current_agent: Annotated[
-        str,
-        State.out_field()
-    ]
-
-    visited_agents: Annotated[
-        List[str],
-        State.out_field()
-    ]
-
-    # @out
-    planned_tasks: Annotated[
-        PlannedTaskQueue, # This is list of work_packages created by the planner,
-        State.out_field()
-    ]
-
-    # @out
-    planned_task_map: Annotated[
-        dict,  # This is the a map of deliverables to work_packages
-        State.out_field()
-    ]
-
-    # @out
-    planned_task_requirements: Annotated[
-        dict,  # This is the map of work_packages to json formatted requirements
-        State.out_field()
-    ]
-
-    # @out - Architect
-    project_folder_strucutre: Annotated[
-        str,
-        State.in_field("The organized layout of directories and subdirectories that form the project's "
-                       "file system, adhering to best practices for project structure.")
-    ]
-
-    # @out
-    code: Annotated[
-        str,
-        State.out_field("The complete, well-documented working code that adheres to all standards "
-                        "requested with the programming language, framework user requested ")
-    ]
-
-    # @out
-    files_created: Annotated[
-        list[str],
-        State.out_field("The absolute paths of file that were created for this project "
-                        "so far.")
-    ]
-
-    # @out
-    infile_license_comments: Annotated[
-        dict[str, str],
-        State.out_field(
-            "A list of multiline license comments for each type of file.")
-    ]
-
-    # @out
-    commands_to_execute: Annotated[
-        dict[str, str],
-        State.out_field("This field represents a dictionary of commands intended to be "
-                        "executed on a Linux terminal. Each key-value pair in the dictionary corresponds to an absolute path (the key) and a specific command (the value) to be executed at that path.")
-    ]
-
     # @in
     functions_skeleton:Annotated[
         FunctionSkeleton,
@@ -229,7 +149,35 @@ class SupervisorState(TypedDict):
             "requested with the programming language, framework user requested "
         )
     ]
-    
+
+    # @out
+    planned_tasks: Annotated[
+        PlannedTaskQueue, # This is list of work_packages created by the planner,
+        State.out_field("A list of work packages planned by the planner")
+    ]
+
+    # @out
+    rag_retrieval: Annotated[
+        str,
+        State.out_field()
+    ]
+
+    # @out
+    requirements_document: Annotated[
+        RequirementsDocument,
+        State.inout_field(
+            "A comprehensive, well-structured document in markdown format that outlines "
+            "the project's requirements derived from the user's request. This serves as a "
+            "guide for the development process."
+        )
+    ]
+
+    # @out
+    code_generation_plan_list: Annotated[
+        List[CodeGenerationPlan],
+        State.out_field()
+    ]
+
 def add_message(state: SupervisorState, message: tuple[ChatRoles, str]) -> SupervisorState:
     """
     Adds a single message to the messages field in the state.

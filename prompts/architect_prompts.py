@@ -14,7 +14,8 @@ the Architect agent can effectively assist users in implementing their projects.
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 
-from models.architect import ProjectDetails, QueryResult, TaskOutput, TasksList
+from models.architect_models import (ProjectDetails, QueryResult, TaskOutput,
+                                     TasksList)
 
 
 class ArchitectPrompts:
@@ -282,10 +283,8 @@ class ArchitectPrompts:
     project_details_prompt: PromptTemplate = PromptTemplate(
         template="""
         Given the user's request: "{user_request}"
-        And the provided project folder structure: "{folder_structure_document}"
 
-        Please suggest a project name that adheres to the naming standards and folder structure, 
-        which should be derived directly from the provided folder structure document.
+        Please suggest a project name that adheres to the naming standards. 
         
         Error messages will only be present if there is an issue with your previous response. 
         '{error_message}'
@@ -293,7 +292,7 @@ class ArchitectPrompts:
         Output format instructions:
         {format_instructions}
         """,
-        input_variables=['user_request', 'folder_structure_document', 'error_message'],
+        input_variables=['user_request', 'error_message'],
         partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=ProjectDetails).get_format_instructions()
         }

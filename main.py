@@ -110,3 +110,6 @@ if __name__ == "__main__":
         status=str(result['project_status']),
         updated_by=USER_ID
     )
+
+    print(f"Project generated successfully! Project ID: {result['project_id']}, Project Name: {result['project_name']}, Location: {PROJECT_PATH}.")
+    logger.info(f"Project generated successfully! Project ID: {result['project_id']}, Project Name: {result['project_name']}, Location: {PROJECT_PATH}.")

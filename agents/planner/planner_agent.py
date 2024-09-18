@@ -13,20 +13,18 @@ from agents.agent.agent import Agent
 from agents.planner.planner_state import PlannerState
 from configs.project_config import ProjectAgents
 from models.constants import Status
-from models.models import Task
-from models.planner import BacklogList
-from prompts.planner import PlannerPrompts
-# TODO: move these prompts planner prompts
-from prompts.segregation import SegregatorPrompts
+from models.models import PlannedTask, PlannedTaskQueue
+from models.planner_models import BacklogList
+from prompts.planner_prompts import PlannerPrompts
 from utils.logs.logging_utils import logger
 
 
 class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
     """
     """
-
-    def __init__(self, llm: ChatOpenAI):
-
+    
+    def __init__(self, llm: ChatOpenAI) -> None:
+        
         super().__init__(
             ProjectAgents.planner.agent_id,
             ProjectAgents.planner.agent_name,
@@ -35,23 +33,23 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
             llm
         )
 
+        self.error_count = 0
+        self.max_retries = 3
+        self.error_messages = []
+        self.file_count = 0
+
+        self.planned_backlogs: list[str] = []
+
+        # prompts
         # backlog planner for each deliverable chain
         self.backlog_plan = self.prompts.backlog_planner_prompt | self.llm
 
         # detailed requirements generator chain
         self.detailed_requirements = self.prompts.detailed_requirements_prompt | self.llm
 
-        self.segregaion_chain = SegregatorPrompts.segregation_prompt | self.llm | JsonOutputParser()
+        self.segregaion_chain= self.prompts.segregation_prompt| self.llm | JsonOutputParser()
 
-        self.current_task: Task = None
-
-        self.error_count = 0
-        self.max_retries = 3
-        self.error_messages = []
-        self.backlog_requirements = {}
-        self.file_count = 0
-
-    def write_workpackages_to_files(self, backlog_dict, output_dir) -> tuple[int, int]:
+    def write_workpackages_to_files(self, output_dir: str, planned_tasks: PlannedTaskQueue) -> tuple[int, int]:
         """
         Write work packages from a dictionary to individual JSON files.
 
@@ -62,58 +60,56 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
         Returns:
         int: Number of work packages written successfully.
         """
-        if not backlog_dict:
-            logger.info("----Workpackage not present----")
+        if len(planned_tasks) < 0:
+            logger.info("----Workpackages not present----")
             return 0, self.file_count
 
-        logger.info("----Writing Workpackages to Project Docs Folder----")
+        logger.info("----Writing workpackages to Project Docs Folder----")
         work_packages_dir = os.path.join(output_dir, "docs", "work_packages")
         os.makedirs(work_packages_dir, exist_ok=True)
 
         session_file_count = 0
-        for key, value in backlog_dict.items():
-            work_package = {'work_package_name': key, **value}
+        for planned_task in planned_tasks:
             file_name = f'work_package_{self.file_count + 1}.json'
             file_path = os.path.join(work_packages_dir, file_name)
 
+            work_package: dict = json.loads(planned_task.description)
+            
             try:
                 with codecs.open(file_path, 'w', encoding='utf-8') as file:
                     json.dump(work_package, file, indent=4)
+
                 logger.info("Workpackage written to: %s", file_path)
-                self.file_count += 1
-                session_file_count += 1
             except UnicodeEncodeError:
                 try:
                     with codecs.open(file_path, 'w', encoding='utf-8-sig') as file:
                         json.dump(work_package, file, indent=4)
-                    logger.info(
-                        "Workpackage written to: %s (with BOM)", file_path)
-                    self.file_count += 1
-                    session_file_count += 1
+
+                    logger.info("Workpackage written to: %s (with BOM)", file_path)
                 except Exception as e:
-                    logger.error(
-                        "Unable to write workpackage to filepath: %s. Error: %s", file_path, str(e))
-
+                    logger.error("Unable to write workpackage to filepath: %s. Error: %s", file_path, str(e))
+            
+            self.file_count += 1
+            session_file_count += 1
         return session_file_count, self.file_count
-
-    def new_deliverable_check(self, state: PlannerState):
-        # self.current_task = {x:config['configurable'][x] for x in ['description','task_status','additional_info','question']}
-        # self.current_task = state.new_task
-        # if config['configurable']['task_status'] == Status.NEW.value:
+    
+    def new_deliverable_check(self, state: PlannerState) -> str:
         if state['current_task'].task_status == Status.NEW:
             return "backlog_planner"
         else:
             return "requirements_developer"
 
-    def backlog_planner(self, state: PlannerState):
-        while (True):
+    def backlog_planner(self, state: PlannerState) -> PlannerState:
+        state['planned_tasks'] = PlannedTaskQueue()
+
+        while(True):
             try:
                 logger.info("----Working on building backlogs for the deliverable----")
                 logger.info("Deliverable: %s", state['current_task'].description)
 
                 generated_backlogs = self.backlog_plan.invoke({
                     "deliverable": state['current_task'].description, 
-                    "context": state['current_task'].additional_info, 
+                    "context": state['context'], 
                     "feedback": self.error_messages
                 })
 
@@ -127,18 +123,11 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
                 backlogs_list = ast.literal_eval(cleaned_generated_backlogs)
                 
                 # Validate the response using Pydantic
-                validated_backlogs = BacklogList(backlogs=backlogs_list)
+                self.planned_backlogs = BacklogList(backlogs=backlogs_list).backlogs
 
                 self.error_count = 0
                 self.error_messages = []
 
-                # Update the state with the validated backlogs
-                state['deliverable'] = state['current_task'].description
-                state['backlogs'] = validated_backlogs.backlogs
-
-                # Extend the planned_task_map with the new backlogs
-                state['planned_task_map'] = {state['deliverable']: {wp: False for wp in state['backlogs']}}
-                
                 return state
             except (ValidationError, ValueError, SyntaxError) as e:
                 self.error_count += 1
@@ -152,18 +141,16 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
                     self.error_count = 0
                     return state
 
-    def requirements_developer(self, state: PlannerState):
-        state['planned_task_requirements'] = {}
-        ptm = {}
-        for backlog in state['planned_task_map'][state['current_task'].description]:
-            while (True):
+    def requirements_developer(self, state: PlannerState) -> PlannerState:
+        for backlog in self.planned_backlogs:
+            while(True):
                 try:
                     logger.info("----Now Working on Generating detailed requirements for the backlog----")
                     logger.info("Backlog: %s", backlog)
                     response = self.detailed_requirements.invoke({
                         "backlog": backlog, 
-                        "deliverable": state['deliverable'], 
-                        "context": state['current_task'].additional_info, 
+                        "deliverable": state['current_task'].description, 
+                        "context": state['context'], 
                         "feedback": self.error_messages
                     })
 
@@ -195,18 +182,29 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
                         return state
                     elif "description" in parsed_response.keys():
                         logger.info("----Generated Detailed requirements in JSON format for the backlog----")
-                        # logger.info("Requirements in JSON: %r", parsed_response)
-
-                        # adding the segregation node to  check if the generated requirements require to 
+                        
                         is_function_generation_required = self.task_segregation(backlog, parsed_response)
-                        parsed_response['is_function_generation_required'] = is_function_generation_required
-                        state['planned_task_requirements'][backlog] = parsed_response
-                        state['planned_task_map'][state['current_task'].description][backlog] = is_function_generation_required
+                        planned_task = PlannedTask(
+                                parent_task_id=state['current_task'].task_id,
+                                task_status=Status.NEW,
+                                is_function_generation_required=is_function_generation_required,
+                        )
+
+                        parsed_response = {
+                            "task_id": f"{planned_task.task_id}",
+                            "work_package_name": f"{backlog}",
+                            **parsed_response
+                        }
+
+                        planned_task.description = json.dumps(parsed_response)
+                        state['planned_tasks'].add_task(planned_task)
+
                         logger.info("Requirements in JSON: %r", parsed_response)
 
                         self.error_count = 0
                         self.error_messages = []
-                        break
+
+                        break # for while loop
                 except Exception as e:
                     logger.info("Error parsing response for backlog: %s", backlog)
                     logger.error("%s", str(e))
@@ -220,31 +218,24 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
                     if self.error_count >= self.max_retries:
                         logger.info("Max retries reached. Halting")
                         self.error_count = 0
-                        return state
-                    
-        """Uncomment the below line to call coder on each workpackage created for the deliverable. Currently coder is not implemented yet so we will try to build workpackages for eacg deliverable using the Done mode."""
-        # state['current_task'].task_status = Status.INPROGRESS
-        state['current_task'].task_status = Status.DONE
+                        return state             
+        
+        state['current_task'].task_status = Status.INPROGRESS
 
-        files_written, total_files_written = self.write_workpackages_to_files(state['planned_task_requirements'], state['project_path'])
+        files_written, total_files_written = self.write_workpackages_to_files(state['project_path'], state['planned_tasks'])
         logger.info('Wrote down %d work packages into the project folder during the current session. Total files written during the current run %d', files_written, total_files_written)
+
         return state
-
-    def generate_response(self, state: PlannerState):
-        if state['current_task'].task_status == Status.DONE:
-            # ----when calling Coder----
-            response = Task(description=state['current_task'].description, task_status=Status.INPROGRESS, additional_info='',question='')
-            # ----When recursively calling planner on each deliverable----
-            # response = Task(description="All Backlogs for the deliverable is successfully generated proceed further", task_status=Status.DONE.value, additional_info=state['current_task'].additional_info,question='')
-        elif state['current_task'].task_status == Status.AWAITING:
-            response = state['current_task']
-        else:
-            response = Task(description=state['current_task'].description, task_status=Status.ABANDONED, additional_info=state['current_task'].additional_info, question=state['current_task'].question)
-
-        if state['response'] is None:
-            state["response"] = [response]
-        else:
-            state["response"].append(response)
+    
+    def generate_response(self, state: PlannerState) -> PlannerState:
+        # After attempting to handle the current task with planner chains, check the task's status.
+        # If the task status is:
+        # - Status.INPROGRESS: The planner has successfully prepared planned tasks.
+        # - Status.AWAITING: The task is waiting for some condition or input before it can proceed.
+        # - Status.NEW: An error occurred during the task execution, and it was not handled properly.
+        # In the case of Status.NEW, we need to abandon the task since it could not be successfully addressed by the planner.
+        if state['current_task'].task_status == Status.NEW:
+            state['current_task'].task_status = Status.ABANDONED
 
         return state
     
@@ -264,34 +255,26 @@ class PlannerAgent(Agent[PlannerState, PlannerPrompts]):
                 tasks.append(task)
 
         return tasks
-
-    def task_segregation(self, workpackage_name: str, requirements: str) -> bool:
+    
+    def task_segregation(self, workpackage_name: str, requirements: dict) -> bool:
         """
         """
         logger.info(f"---- Initiating segregation ----")
 
         try:
             llm_response = self.segregaion_chain.invoke({
-                "work_package": workpackage_name + "/n" + str(requirements)
+                "work_package": f"{workpackage_name} \n {requirements}",
             })
 
-            self.hasError = False
-            self.error_message = ""
             required_keys = ["taskType"]
             missing_keys = [
                 key for key in required_keys if key not in llm_response]
 
             if missing_keys:
-                raise KeyError(
-                    f"Missing keys: {missing_keys} in the response. Try Again!")
-
-            # Checking if the segregation agent generated tasktype
-
+                raise KeyError(f"Missing keys: {missing_keys} in the response. Try Again!")
+            
             logger.info(f" task type  : {llm_response['taskType']} ; {llm_response['reason_for_classification']}")
         except Exception as e:
             logger.error(f"---- Error Occured at segregation: {str(e)}.----")
-
-            self.hasError = True
-            self.error_message = f"An error occurred while processing the request: {str(e)}"
 
         return llm_response['taskType']

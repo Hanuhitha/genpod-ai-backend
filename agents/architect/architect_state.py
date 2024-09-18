@@ -132,15 +132,6 @@ class ArchitectState(TypedDict):
     ]
 
     # @out
-    project_folder_structure: Annotated[
-        str,
-        State.out_field(
-            "The organized layout of directories and subdirectories that form the project's "
-            "file system, adhering to best practices for project structure."
-        )
-    ]
-
-    # @out
     requirements_document: Annotated[
         RequirementsDocument, 
         State.out_field(

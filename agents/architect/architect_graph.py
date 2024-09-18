@@ -8,8 +8,8 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 
 from agents.agent.graph import Graph
-from agents.architect.agent import ArchitectAgent
-from agents.architect.state import ArchitectState
+from agents.architect.architect_agent import ArchitectAgent
+from agents.architect.architect_state import ArchitectState
 from configs.project_config import ProjectGraphs
 
 

@@ -4,7 +4,7 @@ from typing import Dict, List
 from typing_extensions import Annotated, TypedDict
 
 from agents.agent.state import State
-from models.models import Task
+from models.models import PlannedTaskQueue, Task
 
 
 class PlannerState(TypedDict):
@@ -18,15 +18,15 @@ class PlannerState(TypedDict):
     """
 
     # @in
-    deliverable: Annotated[
-        List[str],
+    project_path: Annotated[
+        str,
         State.in_field()
     ]
 
     # @in
-    project_path: Annotated[
+    context: Annotated[
         str,
-        State.in_field()
+        State.in_field("Requirements document  and rag retrivial info.")
     ]
 
     # @inout
@@ -36,25 +36,13 @@ class PlannerState(TypedDict):
     ]
 
     # @out
+    planned_tasks: Annotated[
+        PlannedTaskQueue,
+        State.out_field("A list of work packages planned by the planner")
+    ]
+
+    # @out - not needed
     response: Annotated[
         List[Task],
-        State.out_field()
-    ]
-
-    # @out
-    backlogs: Annotated[
-        List[str],
-        State.out_field()
-    ]
-
-    # @out
-    planned_task_map: Annotated[
-        Dict[str, Dict[str, bool]],
-        State.out_field()
-    ]
-
-    # @out
-    planned_task_requirements: Annotated[
-        Dict[str,str],
         State.out_field()
     ]
