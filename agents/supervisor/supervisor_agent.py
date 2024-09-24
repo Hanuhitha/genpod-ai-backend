@@ -229,6 +229,8 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         state['functions_skeleton'] = {}
         state['test_code'] = ""
         state['planned_tasks'] = PlannedTaskQueue()
+        state['visited_agents'] = []
+        state['current_agent'] = 'None'
         state['rag_retrieval'] = ''
         state['requirements_document'] = RequirementsDocument()
         state['code_generation_plan_list'] = []
@@ -243,7 +245,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         logger.info(f"{self.team.rag.member_name} has been called.")
         self.called_agent = self.team.rag.member_id
-        
+
         # TODO - LOW: RAG cache creation has to be moved to RAG agent
         # check if rag cache was ready if not prepare one
         if not self.is_rag_cache_created:
@@ -340,7 +342,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 ]
 
                 # TODO - MEDIUM: We are adding strings like `RAG_Response:` and using this word for conditional checks in a few places.
-                # problem is performance degradation: the application slows down because we are searching for a small string in a very large 
+                # problem is performance degradation: the application slows down because we are searching for a small string in a very large
                 # string. 06/09/2024 - conditional checks were removed, but still might need to reconsider the way we store info.
                 state['current_task'].task_status = Status.RESPONDED
                 state['current_task'].additional_info += "\nRAG_Response:\n" + result
@@ -390,7 +392,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
                 state['project_name'] = architect_result['project_name']
                 state['microservice_name'] = architect_result['project_name']
 
-            elif architect_result['current_task'].task_status == Status.AWAITING: 
+            elif architect_result['current_task'].task_status == Status.AWAITING:
                 state['current_task'] = architect_result['current_task']
                 state['agents_status'] = f'{self.team.architect.member_name} Awaiting'
                 self.responses[self.team.architect.member_id].append(
@@ -460,12 +462,15 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         state['current_planned_task'] = coder_result['current_planned_task']
 
         if state['current_planned_task'].task_status == Status.DONE:
-            logger.info(f"{self.team.coder.member_name} has successfully completed the task. Task ID: {state['current_planned_task'].task_id}.")
-            
-            state['code_generation_plan_list'].extend(coder_result['code_generation_plan_list'])
+            logger.info(
+                f"{self.team.coder.member_name} has successfully completed the task. Task ID: {state['current_planned_task'].task_id}.")
+
+            state['code_generation_plan_list'].extend(
+                coder_result['code_generation_plan_list'])
             state['agents_status'] = f'{self.team.coder.member_name} has successfully completed the task.'
         elif state['current_planned_task'].task_status == Status.ABANDONED:
-            logger.info(f"{self.team.coder.member_name} was unable to complete the task. Abandoned Task ID: {state['current_planned_task'].task_id}.")
+            logger.info(
+                f"{self.team.coder.member_name} was unable to complete the task. Abandoned Task ID: {state['current_planned_task'].task_id}.")
 
             state['agent_status'] = f"{self.team.coder.member_name} has abandoned the task."
 
@@ -835,27 +840,32 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         # The task is marked as INPROGRESS rather than DONE because:
         # - The planner has set up the tasks, but they have not yet been executed.
         # - The planned tasks are still pending execution.
-        # Once all the planned tasks have been addressed, regardless of their individual states, 
+        # Once all the planned tasks have been addressed, regardless of their individual states,
         # the current task status will be updated to DONE by the supervisor.
         if state['current_task'].task_status == Status.INPROGRESS:
-            logger.info(f"{self.team.planner.member_name} has successfully completed preparing the planned tasks for Task ID: {state['current_task'].task_id}.")
+            logger.info(
+                f"{self.team.planner.member_name} has successfully completed preparing the planned tasks for Task ID: {state['current_task'].task_id}.")
             state['planned_tasks'].add_tasks(
                 planner_result['planned_tasks'].get_all_tasks()
             )
 
             state['agent_status'] = f"Work packages have been built by {self.team.planner.member_name}."
             self.called_agent = self.team.planner.member_id
-            self.responses[self.team.planner.member_id].append(("Returned from Planner", state['current_task']))
+            self.responses[self.team.planner.member_id].append(
+                ("Returned from Planner", state['current_task']))
         elif state['current_task'].task_status == Status.ABANDONED:
-            logger.info(f"{self.team.planner.member_name} has abandoned the task with Task Id: {state['current_task'].task_id}")
+            logger.info(
+                f"{self.team.planner.member_name} has abandoned the task with Task Id: {state['current_task'].task_id}")
 
             state['agents_status'] = f"{self.team.planner.member_name} has abandoned Task ID: {state['current_task'].task_id}."
             self.called_agent = self.team.planner.member_id
 
-            self.responses[self.team.planner.member_id].append(("Returned from Planner with an abandoned task.", state['current_task']))
+            self.responses[self.team.planner.member_id].append(
+                ("Returned from Planner with an abandoned task.", state['current_task']))
         elif state['current_task'].task_status == Status.AWAITING:
-            logger.info(f"{self.team.planner.member_name} is requesting additional information for Task ID: {state['current_task'].task_id}.")
- 
+            logger.info(
+                f"{self.team.planner.member_name} is requesting additional information for Task ID: {state['current_task'].task_id}.")
+
             state['agents_status'] = f"{self.team.planner.member_name} is awaiting additional information for Task ID: {state['current_task'].task_id}."
 
             self.called_agent = self.team.planner.member_id

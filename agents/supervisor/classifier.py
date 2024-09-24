@@ -10,7 +10,7 @@ from agents.agent.agent import Agent
 from agents.supervisor.supervisor_state import SupervisorState
 from configs.project_config import LLMConfig
 from langchain.schema import HumanMessage, SystemMessage, FunctionMessage
-from prompts.supervisor import SupervisorPrompts
+from prompts.supervisor_prompts import SupervisorPrompts
 
 TemplateVariables = Dict[str, Union[str, List[str]]]
 

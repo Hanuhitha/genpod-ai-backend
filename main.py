@@ -40,6 +40,7 @@ if __name__ == "__main__":
     Utilize a MongoDB database (using the provided connection details: \"mongodb://localhost:27017/titlerequest\").
     Host the application at "https://crbe.com".
     """
+    # PROJECT_INPUT = refined_prompt.invoke(PROJECT_INPUT)
 
     LICENSE_URL = "https://raw.githubusercontent.com/intelops/tarian-detector/8a4ff75fe31c4ffcef2db077e67a36a067f1437b/LICENSE"
     LICENSE_TEXT = "SPDX-License-Identifier: Apache-2.0\nCopyright 2024 Authors of CRBE & the Organization created CRBE"
