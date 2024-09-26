@@ -235,7 +235,13 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         state['requirements_document'] = RequirementsDocument()
         state['code_generation_plan_list'] = []
 
-        return state
+        self.responses = {member.member_id: []
+                          for member in self.team.get_team_members_as_list()}
+
+        logger.info(
+            f"Supervisor state has been initialized successfully. current supervisor state: {state}")
+
+        return {**state}
 
     @measure_execution_time(lambda self: self.team.rag)
     def call_rag(self, state: SupervisorState) -> SupervisorState:
@@ -245,6 +251,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         logger.info(f"{self.team.rag.member_name} has been called.")
         self.called_agent = self.team.rag.member_id
+        state['current_agent'] = self.team.rag.member_name
 
         # TODO - LOW: RAG cache creation has to be moved to RAG agent
         # check if rag cache was ready if not prepare one
@@ -364,7 +371,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         logger.info(f"{self.team.architect.member_name} has been called.")
         self.called_agent = self.team.architect.member_id
-        state['current_agent'] = self.team.architect.member_name
+        # state['current_agent'] = self.team.architect.member_name
 
         if state['project_status'] == PStatus.INITIAL:
             logger.info(
@@ -444,7 +451,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         # )]
 
         logger.info("---------- Calling Coder ----------")
-        state['current_agent'] = self.team.coder.member_name
+        # state['current_agent'] = self.team.coder.member_name
 
         coder_result = self.team.coder.invoke({
             'project_name': state['project_name'],
@@ -475,6 +482,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
             state['agent_status'] = f"{self.team.coder.member_name} has abandoned the task."
 
         self.called_agent = self.team.coder.member_id
+        # state['current_agent'] = self.team.coder.member_name
         self.responses[self.team.coder.member_id].append(
             ("Returned from Coder", state['current_planned_task']))
 
@@ -491,7 +499,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
         )]
 
         logger.info("---------- Calling Test Code Generator ----------")
-        state['current_agent'] = self.team.tests_generator.member_name
+        # state['current_agent'] = self.team.tests_generator.member_name
 
         test_coder_result = self.team.tests_generator.invoke({
             'project_name': state['project_name'],
@@ -543,7 +551,7 @@ class SupervisorAgent(Agent[SupervisorState, SupervisorPrompts]):
 
         logger.info(f"{self.team.supervisor.member_name} has been called.")
         self.called_agent = self.team.supervisor.member_id
-        # state['current_agent'] = self.team.supervisor.member_name
+        state['current_agent'] = self.team.supervisor.member_name
         if state['project_status'] == PStatus.RECEIVED:
             # When the project is in the 'RECEIVED' phase:
             # - RAG agent has to be called.

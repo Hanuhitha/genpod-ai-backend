@@ -72,22 +72,22 @@ class Classifier(ABC):
         self.project_flow = """
         **Genpod Development Team Workflow:**
         The workflow begins when the user provides the initial input. Based on the *project status* flag, different team members take on specific roles and responsibilities.
-        1. **When Project Status is 'NEW':**   
+        1. **When Project Status is 'NEW':**
         If the *project status* is set to 'NEW', the RAG agent must gather additional information required for further processing. This stage is crucial to ensure that all necessary data is collected before moving forward.
-        2. **When Project Status is 'INITIAL':**  
+        2. **When Project Status is 'INITIAL':**
         If the *project status* is 'INITIAL', the Architect agent is responsible for preparing the requirements document, which defines the scope and serves as the blueprint for the next phases.
-        3. **When Project Status is 'Monitoring':**  
+        3. **When Project Status is 'Monitoring':**
         If the *project status* is 'Monitoring' and the task status is 'AWAITING', and the request was initiated by the Architect (calling agent), the RAG agent must provide the necessary information. If the RAG agent cannot provide this information, it should be gathered from a human resource.
-        4. **When Project Status is 'Executing':**  
-        - If  *are_planned_tasks_in_progress* is False, the Planner is responsible for preparing them.  
+        4. **When Project Status is 'Executing':**
+        - If  *are_planned_tasks_in_progress* is False, the Planner is responsible for preparing them.
         - If planned tasks is True, the Coder and Tester must complete them.
-        5. **Special Considerations in the 'Executing' Status:**  
-        - If the task status is 'DONE' or 'ABANDONED', the Supervisor can assign new tasks for the Planner.  
-        - If the task status is 'IN PROGRESS', the Coder and Tester are responsible for completing the available tasks.  
-        - If *is_function_generation_required* is True, the Tester must first complete the unit test cases, after which the Coder can finish the task. 
+        5. **Special Considerations in the 'Executing' Status:**
+        - If the task status is 'DONE' or 'ABANDONED', the Supervisor can assign new tasks for the Planner.
+        - If the task status is 'IN PROGRESS', the Coder and Tester are responsible for completing the available tasks.
+        - If *is_function_generation_required* is True, the Tester must first complete the unit test cases, after which the Coder can finish the task.
         - Invoking call_test_code_generator due to Project Status is 'Executing' and Planned Task involving is_function_generation_required and is_test_code_generated.
-        - If function generation is not required and in the Planned Task  *is_code_generate* is False and PlannedTask Status is 'NEW',the Coder can complete the task independently. 
-        6. **When Project Status is 'DONE':**  
+        - If function generation is not required and in the Planned Task  *is_code_generate* is False and PlannedTask Status is 'NEW',the Coder can complete the task independently.
+        6. **When Project Status is 'DONE':**
         When the *project status* is set to 'DONE',the system should trigger an automatic update to reflect the completion of all tasks.
          """
 
@@ -112,9 +112,10 @@ class Classifier(ABC):
 
     def set_additional_info(self, state) -> None:
         flags = []
-        self.current_agent = state['current_agent']
-        self.current_status = state['current_task'].task_status.value
-        self.visited_agents = state['visited_agents']
+        self.current_agent = state['current_agent'] if 'current_agent' in state else ''
+        self.current_status = state['current_task'].task_status.value if 'current_task' in state else ''
+        self.visited_agents = state['visited_agents'] if 'visited_agents' in state else [
+        ]
         self.project_status = state['project_status'].value
         if "current_planned_task" in state:
             flags.append(
@@ -123,7 +124,7 @@ class Classifier(ABC):
             flags.append(
                 f"is_test_code_generated : {state['current_planned_task'].is_test_code_generated}")
             flags.append(
-                f"is_code_generate : {state['current_planned_task'].is_code_generate}")
+                f"is_code_generate : {state['current_planned_task'].is_code_generated}")
         if "are_planned_tasks_in_progress" in state:
             flags.append(
                 f"are_planned_tasks_in_progress : {state['are_planned_tasks_in_progress']}")

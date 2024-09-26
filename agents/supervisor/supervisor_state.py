@@ -98,7 +98,7 @@ class SupervisorState(TypedDict):
     ]
 
     # @out
-    is_rag_query_answered : Annotated[
+    is_rag_query_answered: Annotated[
         bool,
         State.out_field("is query answered by rag agent.")
     ]
@@ -111,13 +111,13 @@ class SupervisorState(TypedDict):
 
     # @out
     tasks: Annotated[
-        TaskQueue, 
+        TaskQueue,
         State.out_field("The tasks create while generating the project.")
     ]
 
     # @inout
     messages: Annotated[
-        list[tuple[ChatRoles, str]], 
+        list[tuple[ChatRoles, str]],
         State.inout_field(
             "A chronological list of tuples representing the conversation history between the "
             "system, user, and AI. Each tuple contains a role identifier (e.g., 'AI', 'tool', "
@@ -134,7 +134,7 @@ class SupervisorState(TypedDict):
     ]
 
     # @in
-    functions_skeleton:Annotated[
+    functions_skeleton: Annotated[
         FunctionSkeleton,
         State.in_field(
             "The well detailed function skeleton for the functions that are in the code."
@@ -143,7 +143,7 @@ class SupervisorState(TypedDict):
 
     # @in
     test_code: Annotated[
-        str, 
+        str,
         State.in_field(
             "The complete, well-documented working unit test code that adheres to all standards "
             "requested with the programming language, framework user requested "
@@ -152,7 +152,7 @@ class SupervisorState(TypedDict):
 
     # @out
     planned_tasks: Annotated[
-        PlannedTaskQueue, # This is list of work_packages created by the planner,
+        PlannedTaskQueue,  # This is list of work_packages created by the planner,
         State.out_field("A list of work packages planned by the planner")
     ]
 
@@ -177,6 +177,16 @@ class SupervisorState(TypedDict):
         List[CodeGenerationPlan],
         State.out_field()
     ]
+    current_agent:  Annotated[
+        str,
+        State.inout_field()
+    ]
+
+    visited_agents:  Annotated[
+        List[str],
+        State.inout_field()
+    ]
+
 
 def add_message(state: SupervisorState, message: tuple[ChatRoles, str]) -> SupervisorState:
     """

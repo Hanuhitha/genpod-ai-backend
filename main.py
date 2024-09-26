@@ -4,6 +4,8 @@ Driving code file for this project.
 import os
 
 from agents.supervisor.supervisor_state import SupervisorState
+from agents.prompt.prompt_graph import PromptGraph
+from agents.prompt.prompt_state import PromptState
 from configs.database import get_client_local_db_file_path
 from configs.project_config import ProjectConfig
 from configs.project_path import set_project_path
@@ -30,6 +32,10 @@ if __name__ == "__main__":
     DATABASE_PATH = get_client_local_db_file_path()
     db = Database(DATABASE_PATH)
 
+    prompt_config = config.agents_config[config.agents.prompt.agent_id]
+    prompt_engineer_graph = PromptGraph(
+        prompt_config.llm, persistance_db_path=DATABASE_PATH)
+
     # setup database
     # Tables are created only if they doesn't exist
     db.setup_db()
@@ -40,7 +46,26 @@ if __name__ == "__main__":
     Utilize a MongoDB database (using the provided connection details: \"mongodb://localhost:27017/titlerequest\").
     Host the application at "https://crbe.com".
     """
-    # PROJECT_INPUT = refined_prompt.invoke(PROJECT_INPUT)
+    # PROJECT_INPUT
+    graph_config = {
+        "configurable": {
+            "thread_id": prompt_config.thread_id
+        }
+    }
+
+    graph_config['recursion_limit'] = 500
+    prompt_response = prompt_engineer_graph.app.stream({
+        'original_user_input': '',
+        'messages': [],
+        'status': False
+    }, graph_config)
+    for response in prompt_response:
+        if "__end__" not in response:
+            continue
+        else:
+            break
+
+    # logger.info(f"Project input refined: {prompt_response}")
 
     LICENSE_URL = "https://raw.githubusercontent.com/intelops/tarian-detector/8a4ff75fe31c4ffcef2db077e67a36a067f1437b/LICENSE"
     LICENSE_TEXT = "SPDX-License-Identifier: Apache-2.0\nCopyright 2024 Authors of CRBE & the Organization created CRBE"
@@ -112,5 +137,7 @@ if __name__ == "__main__":
         updated_by=USER_ID
     )
 
-    print(f"Project generated successfully! Project ID: {result['project_id']}, Project Name: {result['project_name']}, Location: {PROJECT_PATH}.")
-    logger.info(f"Project generated successfully! Project ID: {result['project_id']}, Project Name: {result['project_name']}, Location: {PROJECT_PATH}.")
+    print(
+        f"Project generated successfully! Project ID: {result['project_id']}, Project Name: {result['project_name']}, Location: {PROJECT_PATH}.")
+    logger.info(
+        f"Project generated successfully! Project ID: {result['project_id']}, Project Name: {result['project_name']}, Location: {PROJECT_PATH}.")

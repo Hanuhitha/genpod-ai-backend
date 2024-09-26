@@ -153,7 +153,7 @@ class ProjectGraphs(Enum):
     tests_generator = GraphInfo("Unit Tester Graph", "GRPH_06_TST")
     modernizer = GraphInfo("Knowledge Graph Generator Graph", "GRPH_07_MOD")
     reviewer = GraphInfo("Code Reviewer Graph", "GRPH_08_REV")
-    # prompt = GraphInfo("Prompt Graph", "GRPH_09_PRM")
+    prompt = GraphInfo("Prompt Refinement Graph", "GRPH_09_PRM")
 
     @property
     def graph_name(self) -> str:
@@ -255,12 +255,12 @@ class ProjectAgents(Enum):
         alias="reviwer",
         description="Responsible for evaluating code quality and ensuring adherence to coding standards. This includes reviewing code for clean code principles, naming conventions, and compliance with both internal and external standards."
     )
-    # prompt = AgentInfo(
-    #     "Prompt Enhancer",
-    #     "PRO_09",
-    #     alias="prompt",
-    #     description="Responsible for enhancing the user prompt in the project by improving the code structure, adhering to the predefined format, and using the user's input as a guide. This includes ensuring proper grammar, spelling, and style in the provided text."
-    # )
+    prompt = AgentInfo(
+        "Prompt Enhancer",
+        "PRO_09",
+        alias="prompt",
+        description="Responsible for enhancing the user prompt in the project by improving the code structure, adhering to the predefined format, and using the user's input as a guide. This includes ensuring proper grammar, spelling, and style in the provided text."
+    )
 
     @property
     def agent_name(self) -> str:
@@ -422,19 +422,19 @@ AGENTS_CONFIG: Dict[str, AgentConfig] = {
             model_kwargs={"seed": 4000, "top_p": 0.2}
         )
     ),
-    #     ProjectAgents.prompt.agent_id: AgentConfig(
-    #     ProjectAgents.prompt.agent_name,
-    #     ProjectAgents.prompt.agent_id,
-    #     ProjectAgents.prompt.alias,
-    #     ProjectAgents.prompt.description,
-    #     LLMConfig(
-    #         model="gpt-4o-2024-05-13",
-    #         temperature=0.3,
-    #         max_retries=5,
-    #         streaming=True,
-    #         model_kwargs={"seed": 4000, "top_p": 0.2}
-    #     )
-    # )
+    ProjectAgents.prompt.agent_id: AgentConfig(
+        ProjectAgents.prompt.agent_name,
+        ProjectAgents.prompt.agent_id,
+        ProjectAgents.prompt.alias,
+        ProjectAgents.prompt.description,
+        LLMConfig(
+            model="gpt-4o-2024-05-13",
+            temperature=0.3,
+            max_retries=5,
+            streaming=True,
+            model_kwargs={"seed": 4000, "top_p": 0.2}
+        )
+    )
 }
 
 
