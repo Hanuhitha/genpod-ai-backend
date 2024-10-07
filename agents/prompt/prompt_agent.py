@@ -6,6 +6,7 @@ from typing import Literal
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables.base import RunnableSequence
 from langchain_openai import ChatOpenAI
+import requests
 from models.constants import ChatRoles, PStatus, Status
 
 
@@ -98,7 +99,7 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
 
         if self.state['status'] == False and len(self.state['original_user_input']) == 0:
             logger.info(f"Please provide the user input :")
-            user_input = input("Please provide the user input: \n")
+            user_input = state['original_user_input']
             self.state['original_user_input'] = user_input
 
         elif not self.state['status']:
@@ -115,17 +116,22 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
             ))
             logger.info(
                 f"This is your structured project input: {refined_response['enhanced_prompt']}")
+
+            self.post_enhanced_prompt(
+                refined_response['enhanced_prompt'])
+
             logger.info(
                 f"Do you like the refined project input (Yes/No) If No, please provide the additional information:")
 
-            output = input(
-                "Do you like the refined project input (Yes/No) If No, please provide the additional information:\n")
+            user_response = self.additional_info(
+                prompt="I need to refine the project input. Add more test cases.")
+
             self.add_message(((
                 ChatRoles.AI,
                 f"{self.agent_name}: Do you like the refined project input (Yes/No) If No, please provide the additional information:"
 
             ),
-                (ChatRoles.USER, f"User Response: {output}"
+                (ChatRoles.USER, f"User Response: {user_response}"
 
                  )))
 
@@ -161,16 +167,52 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
         self.state = {**state}
         return {**self.state}
 
-    # def stream(self, input: Dict[str, Any] | Any) -> Iterator[Dict[str, GenericAgentState]]:
-    #     """
-    #     """
-    #     graph_config = {
-    #         "configurable": {
-    #             "thread_id": self.thread_id
-    #         }
-    #     }
+    def post_enhanced_prompt(self, prompt):
+        llm_response = {
+            "llm_output_prompt_message_response": prompt,
+            "response_id": self.state['request_id']
+        }
 
-    #     if self.recursion_limit != -1:
-    #         graph_config['recursion_limit'] = self.recursion_limit
+        try:
+            request_id = self.state['request_id']
+            url = f'http://localhost:8000/update_conversation/{request_id}'
+            response = requests.put(url, json=llm_response)
+            response.raise_for_status()  # Raise an exception for HTTP errors
 
-    #     return self.graph.app.stream(input, graph_config)
+            returned_data = response.json()
+            logger.info("posted! %s", returned_data)
+
+        except requests.exceptions.RequestException as e:
+            logger.error("Error creating project input: %s", e)
+
+    def additional_info(self, prompt):
+        self.state['request_id'] = self.state['request_id'] + 1
+        additional_info = {
+            "user_input_prompt_message": prompt,
+            "request_id": self.state['request_id']
+        }
+        try:
+            response = requests.post(
+                "http://localhost:8000/additional_input", json=additional_info)
+            response.raise_for_status()
+
+            returned_data = response.json()
+            logger.info("Project Input has been created! %s",
+                        returned_data['user_input_prompt_message'])
+            return returned_data['user_input_prompt_message']
+
+        except requests.exceptions.RequestException as e:
+            logger.error("Error creating project input: %s", e)
+
+    def get_user_input(self):
+        try:
+            response = requests.get("http://localhost:8000/additional_info")
+            response.raise_for_status()  # Raise an exception for HTTP errors
+
+            project_data = response.json()
+            logger.info("Retrieved %d additional user inputs.",
+                        len(project_data))
+            return project_data
+        except requests.exceptions.RequestException as e:
+            logger.error("Error retrieving project inputs: %s", e)
+            return None

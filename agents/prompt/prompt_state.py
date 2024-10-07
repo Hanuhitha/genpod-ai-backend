@@ -32,3 +32,9 @@ class PromptState(TypedDict):
             "Status of the input refinement process."
         )
     ]
+    request_id: Annotated[
+        int,
+        State.in_field(
+            "user request id"
+        )
+    ]

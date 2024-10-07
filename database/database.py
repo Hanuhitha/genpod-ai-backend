@@ -1,4 +1,7 @@
 import sqlite3
+
+from database.tables.conversation import Conversation
+from database.tables.metadata import Metadata
 from database.tables.metrics import Metrics
 
 from database.tables.microservices import Microservices
@@ -26,6 +29,8 @@ class Database():
     microservices_table: Microservices
     sessions_table: Sessions
     metrics_table: Metrics
+    conversation_table: Conversation
+    metadata_table: Metadata
 
     def __init__(self, db_path):
         """
@@ -46,6 +51,8 @@ class Database():
         self.sessions_table = Sessions(self.connection)
         self.metrics_table = Metrics(self.connection)
         self.tokens_table = Tokens(self.connection)
+        self.metadata_table = Metadata(self.connection)
+        self.conversation_table = Conversation(self.connection)
 
     def connect(self) -> sqlite3.Connection:
         """
@@ -91,6 +98,12 @@ class Database():
 
             #  Create tokens table
             self.tokens_table.create()
+
+            # Create metadata table
+            self.metadata_table.create()
+
+            # Create conversation table
+            self.conversation_table.create()
 
             self.connection.commit()
         except sqlite3.Error as sqe:
