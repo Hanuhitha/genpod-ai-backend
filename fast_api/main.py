@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from configs.database import get_client_local_db_file_path
 from database.database import Database
 
+
 from fast_api.models import LLMResponse, Metadata, ProjectInput, UserResponse
 from fastapi.middleware.cors import CORSMiddleware
 # from .routes import router
@@ -210,7 +211,7 @@ async def update_conversation(request_id: str, update_data: LLMResponse):
             db.connection.commit()
             logger.info(
                 f"Record with request_id {request_id} updated successfully.")
-            return {"message": f"Record with request_id {request_id} updated successfully."}
+            return record
         else:
             raise HTTPException(status_code=404,
                                 detail=f"No matching record found with request_id {request_id} and response_id IS NOT NULL")

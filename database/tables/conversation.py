@@ -14,8 +14,8 @@ class Conversation(Table):
         connection (sqlite3.Connection): Connection to the SQLite database.
     """
     id: int
-    request_id: str
-    response_id: str
+    request_id: int
+    response_id: int
     user_input_prompt_message: str
     llm_output_prompt_message_response: str
     conversation_id: str
@@ -42,9 +42,9 @@ class Conversation(Table):
         create_table_query = f'''
         CREATE TABLE IF NOT EXISTS {self.name} (
             id INTEGER PRIMARY KEY,
-            request_id TEXT DEFAULT NULL,
-            response_id TEXT DEFAULT NULL,
-            conversation_id TEXT DEFAULT NULL,
+            request_id INTEGER DEFAULT NULL,
+            response_id INTEGER DEFAULT NULL,
+            conversation_id INTEGER DEFAULT NULL,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             user_input_prompt_message TEXT DEFAULT NULL,

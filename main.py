@@ -12,6 +12,8 @@ from configs.database import get_client_local_db_file_path
 from configs.project_config import ProjectConfig
 from configs.project_path import set_project_path
 from database.database import Database
+from database.tables.conversation import Conversation
+
 from genpod.team import TeamMembers
 from utils.logs.logging_utils import logger
 from utils.time import get_timestamp
@@ -65,13 +67,16 @@ if __name__ == "__main__":
         "application_id": 1,
         "user_email": "a@gmail.com",
         "project_input": PROJECT_INPUT,
-        "usergitid": 123,
+        "usergitid": "123",
         "task_id": 1,
         "agent_name": config.agents.prompt.agent_name,
         "agent_id": config.agents.prompt.agent_id,
-        "thread_id": prompt_config.thread_id,
+        "thread_id": "1",
         "system_process_id": 0
     }
+
+    logger.info("metadata",
+                metadata)
 
     try:
         response = requests.post(
