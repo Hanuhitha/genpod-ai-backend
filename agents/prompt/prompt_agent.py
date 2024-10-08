@@ -2,7 +2,8 @@
 """
 import os
 from typing import Literal
-
+import time
+import requests
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables.base import RunnableSequence
 from langchain_openai import ChatOpenAI
@@ -41,6 +42,9 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
         )
         self.prompt_node_name = "prompt_node"  # The entry point of the graph
         self.refined_prompt_node_name = "refined_prompt_node"  # END point of the graph
+
+        self.max_retries = 30
+        self.retry_interval = 2
 
         self.refined_input_chain = (
             self.prompts.prompt_generation_prompt
@@ -177,7 +181,7 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
             request_id = self.state['request_id']
             url = f'http://localhost:8000/update_conversation/{request_id}'
             response = requests.put(url, json=llm_response)
-            response.raise_for_status()  # Raise an exception for HTTP errors
+            response.raise_for_status()
 
             returned_data = response.json()
             logger.info("posted! %s", returned_data)
@@ -207,7 +211,7 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
     def get_user_input(self):
         try:
             response = requests.get("http://localhost:8000/additional_info")
-            response.raise_for_status()  # Raise an exception for HTTP errors
+            response.raise_for_status()
 
             project_data = response.json()
             logger.info("Retrieved %d additional user inputs.",
@@ -216,3 +220,32 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
         except requests.exceptions.RequestException as e:
             logger.error("Error retrieving project inputs: %s", e)
             return None
+
+    def get_enhanced_prompt(self, request_id: int):
+        retries = 0
+
+        while retries < self.max_retries:
+            try:
+                response = requests.get(
+                    f"http://localhost:8000/enhanced_prompt/{request_id}")
+                response.raise_for_status()
+                data = response.json()
+                if data.get("llm_output_prompt_message_response"):
+                    logger.info("Enhanced prompt found.")
+                    return data
+                else:
+                    logger.info(
+                        "Enhanced prompt not available yet. Retrying in %d seconds...",
+                        self.retry_interval
+                    )
+
+            except requests.exceptions.RequestException as e:
+                logger.error("Error retrieving enhanced prompt: %s", e)
+                return None
+
+            time.sleep(self.retry_interval)
+            retries += 1
+
+        logger.error(
+            "Max retries reached. Enhanced prompt not found for request ID: %s", request_id)
+        return None

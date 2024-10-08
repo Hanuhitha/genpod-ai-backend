@@ -7,13 +7,10 @@ import requests
 
 from agents.supervisor.supervisor_state import SupervisorState
 from agents.prompt.prompt_graph import PromptGraph
-from agents.prompt.prompt_state import PromptState
 from configs.database import get_client_local_db_file_path
 from configs.project_config import ProjectConfig
 from configs.project_path import set_project_path
 from database.database import Database
-from database.tables.conversation import Conversation
-
 from genpod.team import TeamMembers
 from utils.logs.logging_utils import logger
 from utils.time import get_timestamp
@@ -41,8 +38,6 @@ if __name__ == "__main__":
     prompt_engineer_graph = PromptGraph(
         prompt_config.llm, persistance_db_path=DATABASE_PATH)
 
-    # setup database
-    # Tables are created only if they doesn't exist
     db.setup_db()
 
     PROJECT_INPUT = """
@@ -75,8 +70,7 @@ if __name__ == "__main__":
         "system_process_id": 0
     }
 
-    logger.info("metadata",
-                metadata)
+    logger.info("metadata", metadata)
 
     try:
         response = requests.post(

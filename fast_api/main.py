@@ -1,18 +1,19 @@
 # fast_api/main.py
 
-
+import asyncio
+from typing import List
 from ast import List
+from datetime import datetime
 import sqlite3
 from venv import logger
 from fastapi import FastAPI, HTTPException
 from configs.database import get_client_local_db_file_path
 from database.database import Database
-
-
+from database.tables.conversation import Conversation
 from fast_api.models import LLMResponse, Metadata, ProjectInput, UserResponse
 from fastapi.middleware.cors import CORSMiddleware
-# from .routes import router
-
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
 
 app = FastAPI(title="LLM Agent API", version="1.0.0")
 
@@ -26,9 +27,6 @@ response_id = 0
 count = 0
 meta_data = []
 
-DATABASE_PATH = get_client_local_db_file_path()
-db = Database(DATABASE_PATH)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[" all "],
@@ -38,16 +36,37 @@ app.add_middleware(
 )
 
 
+DATABASE_PATH = get_client_local_db_file_path()
+db = Database(DATABASE_PATH)
+db.setup_db()
+
+
+def get_db():
+    db_session = db.SessionLocal()
+    try:
+        yield db_session
+    finally:
+        db_session.close()
+
+
 @app.get("/app")
 async def root():
     return {"message": "Hello World"}
 
 
+@app.get("/applications")
+def get_all_conversations(db: Session = Depends(get_db)):
+    """
+    Query all conversations using SQLAlchemy ORM.
+    """
+    conversations = db.query(Conversation).all()
+    return {"conversations": conversations}
+
+
 @app.post("/metadata")
-async def metadata(input: Metadata):
+async def metadata(input: Metadata, db: Session = Depends(get_db)):
     try:
-        meta_data.append(input)
-        metadata = db.metadata_table.insert(
+        new_metadata = Metadata(
             user_id=input.user_id,
             session_id=input.session_id,
             organisation_id=input.organisation_id,
@@ -60,69 +79,89 @@ async def metadata(input: Metadata):
             agent_name=input.agent_name,
             agent_id=input.agent_id,
             thread_id=input.thread_id,
-            system_process_id=input.system_process_id
+            system_process_id=input.system_process_id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
-        logger.info("Metadata has been created!", metadata)
 
-        return input
+        db.add(new_metadata)
+        db.commit()
+        db.refresh(new_metadata)
+
+        logger.info("Metadata has been created!", new_metadata)
+
+        return new_metadata
 
     except Exception as e:
+        logger.error(f"Error creating metadata: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Error starting conversation: {str(e)}")
+            status_code=500, detail=f"Error creating metadata: {str(e)}"
+        )
 
 
 @app.post("/project_info")
-async def start_conversation(input: ProjectInput):
+async def start_conversation(input: ProjectInput, db: Session = Depends(get_db)):
     try:
-        user_project_details.append(input)
-        conversation = db.conversation_table.insert(
+        new_conversation = Conversation(
             request_id=input.request_id,
             conversation_id=1,
             user_input_prompt_message=input.user_input_prompt_message,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
-        logger.info("Project Input has been created!", conversation)
+        db.add(new_conversation)
+        db.commit()
+        db.refresh(new_conversation)
 
-        return input
+        logger.info("Project Input has been created!", new_conversation)
+        return new_conversation
 
     except Exception as e:
+        logger.error(f"Error starting conversation: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Error starting conversation: {str(e)}")
+            status_code=500, detail=f"Error starting conversation: {str(e)}"
+        )
 
 
 @app.post("/additional_input")
-async def post_additional_input(input: ProjectInput):
+async def post_additional_input(input: ProjectInput, db: Session = Depends(get_db)):
     try:
-        additonal_input.append(input)
-        conversation = db.conversation_table.insert(
+        new_conversation = Conversation(
             request_id=input.request_id,
-            # input.response_id,
             conversation_id=1,
             user_input_prompt_message=input.user_input_prompt_message,
-            # input.llm_output_prompt_message_response
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
-        logger.info("Project Input has been created!", conversation)
 
-        return input
+        db.add(new_conversation)
+        db.commit()
+        db.refresh(new_conversation)
+
+        logger.info("Project Input has been created!", new_conversation)
+
+        return new_conversation
 
     except Exception as e:
+        logger.error(f"Error starting conversation: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Error starting conversation: {str(e)}")
+            status_code=500, detail=f"Error starting conversation: {str(e)}"
+        )
 
 
 @app.get("/project_info", response_model=ProjectInput)
-async def get_project_info():
+async def get_project_info(db: Session = Depends(get_db)):
     try:
-        return user_project_details[-1]
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error retrieving project info: {str(e)}"
-        )
+        project_info = db.query(Conversation).order_by(
+            Conversation.id.desc()).first()
 
+        if not project_info:
+            raise HTTPException(
+                status_code=404, detail="No project info found"
+            )
 
-@app.get("/project_info_all", response_model=ProjectInput)
-async def get_project_info():
-    try:
-        return user_project_details
+        return project_info
+
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error retrieving project info: {str(e)}"
@@ -130,117 +169,153 @@ async def get_project_info():
 
 
 @app.post("/enhanced_input", response_model=LLMResponse)
-async def post_enhanced_input(input: LLMResponse):
+async def post_enhanced_input(input: LLMResponse, db: Session = Depends(get_db)):
     try:
-        enhanced_input = input.llm_output_prompt_message_response
-        response_id = input.response_id
-        enhanced_conversation = db.conversation_table.insert(
-            input.response_id,
-            llm_output_prompt_message_response=input.llm_output_prompt_message_response
+        enhanced_conversation = Conversation(
+            response_id=input.response_id,
+            llm_output_prompt_message_response=input.llm_output_prompt_message_response,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
+
+        db.add(enhanced_conversation)
+        db.commit()
+        db.refresh(enhanced_conversation)
+
         logger.info("Project Input has been created!", enhanced_conversation)
 
-        return enhanced_input
+        # Return the newly created conversation
+        return enhanced_conversation
 
     except Exception as e:
+        logger.error(f"Error starting conversation: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Error starting conversation: {str(e)}")
+            status_code=500, detail=f"Error starting conversation: {str(e)}"
+        )
 
 
 @app.get("/product_info_all")
-async def get_all_products():
+async def get_all_products(db: Session = Depends(get_db)):
     try:
-        cursor = db.connection.cursor()
-        cursor.execute("SELECT * FROM conversation")
-        conversation = cursor.fetchall()
+        conversations = db.query(Conversation).all()
 
-        if not conversation:
+        if not conversations:
             raise HTTPException(
-                status_code=404, detail="No conversation found")
+                status_code=404, detail="No conversation found"
+            )
 
-        return conversation  # Convert rows to dicts
-    except sqlite3.Error as e:
+        return conversations
+
+    except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error fetching conversation: {str(e)}")
-    finally:
-        cursor.close()
+            status_code=500, detail=f"Error fetching conversation: {str(e)}"
+        )
 
 
 @app.get("/product/{request_id}")
-async def get_product_by_id(request_id: str):
+async def get_product_by_id(request_id: int, db: Session = Depends(get_db)):
     try:
-        cursor = db.connection.cursor()
-        cursor.execute(
-            "SELECT * FROM conversation WHERE id = ?", (request_id,))
-        conversation = cursor.fetchall()
+        conversation = db.query(Conversation).filter(
+            Conversation.id == request_id).first()
 
         if not conversation:
             raise HTTPException(
-                status_code=404, detail=f"conversation with ID {request_id} not found")
+                status_code=404, detail=f"Conversation with ID {request_id} not found"
+            )
 
         return conversation
-    except sqlite3.Error as e:
+
+    except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error fetching product: {str(e)}")
-    finally:
-        cursor.close()
+            status_code=500, detail=f"Error fetching conversation: {str(e)}"
+        )
 
 
 @app.put("/update_conversation/{request_id}")
-async def update_conversation(request_id: str, update_data: LLMResponse):
+async def update_conversation(request_id: str, update_data: LLMResponse, db: Session = Depends(get_db)):
     try:
-        cursor = db.connection.cursor()
-        cursor.execute(f"""
-            SELECT * FROM conversation 
-            WHERE request_id = ? AND response_id IS NOT NULL
-        """, (request_id,))
-        record = cursor.fetchone()
+        conversation = db.query(Conversation).filter(
+            Conversation.request_id == request_id,
+            Conversation.response_id.isnot(None)
+        ).first()
 
-        if record:
-            cursor.execute(f"""
-                UPDATE conversation
-                SET response_id = ?, 
-                    llm_output_prompt_message_response = ?,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE request_id = ? AND response_id IS NOT NULL
-            """, (
-                update_data.response_id,
-                update_data.llm_output_prompt_message_response,
-                request_id
-            ))
-            db.connection.commit()
+        if conversation:
+            conversation.response_id = update_data.response_id
+            conversation.llm_output_prompt_message_response = update_data.llm_output_prompt_message_response
+            conversation.updated_at = datetime.utcnow()
+
+            db.commit()
+            db.refresh(conversation)
+
             logger.info(
                 f"Record with request_id {request_id} updated successfully.")
-            return record
+            return conversation
         else:
-            raise HTTPException(status_code=404,
-                                detail=f"No matching record found with request_id {request_id} and response_id IS NOT NULL")
+            raise HTTPException(
+                status_code=404, detail=f"No matching record found with request_id {request_id} and response_id IS NOT NULL")
 
-    except sqlite3.Error as e:
+    except Exception as e:
         logger.error(f"Error updating record: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error updating record: {str(e)}")
 
-    finally:
-        if cursor:
-            cursor.close()
-
 
 @app.get("/enhanced_input", response_model=LLMResponse)
-async def get_enhanced_input():
+async def get_enhanced_input(db: Session = Depends(get_db)):
     try:
+        enhanced_input = db.query(Conversation).filter(Conversation.llm_output_prompt_message_response.isnot(
+            None)).order_by(Conversation.updated_at.desc()).first()
+
+        if not enhanced_input:
+            raise HTTPException(
+                status_code=404, detail="No enhanced input found"
+            )
+
         return enhanced_input
 
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error starting conversation: {str(e)}")
+            status_code=500, detail=f"Error fetching enhanced input: {str(e)}")
 
 
 @app.get("/additional_input", response_model=UserResponse)
-async def get_additional_input():
+async def get_additional_input(db: Session = Depends(get_db)):
     try:
-        return additonal_input[-1]
+        additional_input = db.query(Conversation).order_by(
+            Conversation.updated_at.desc()).first()
+
+        if not additional_input:
+            raise HTTPException(
+                status_code=404, detail="No additional input found"
+            )
+
+        return additional_input
+
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error retrieving project info: {str(e)}"
+            status_code=500, detail=f"Error retrieving additional input: {str(e)}"
+        )
+
+
+@app.get("/enhanced_prompt/{request_id}", response_model=LLMResponse)
+async def get_enhanced_prompt(request_id: int, db: Session = Depends(get_db)):
+    max_retries = 30
+    retry_interval = 3
+
+    try:
+        for _ in range(max_retries):
+            conversation = db.query(Conversation).filter(
+                Conversation.request_id == request_id).first()
+
+            if conversation and conversation.llm_output_prompt_message_response:
+                return conversation
+
+            await asyncio.sleep(retry_interval)
+
+        raise HTTPException(
+            status_code=404, detail="Enhanced prompt response not found for the given request_id.")
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving enhanced prompt: {str(e)}"
         )
