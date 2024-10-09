@@ -11,14 +11,15 @@ from agents.agent.agent import Agent
 from agents.supervisor.supervisor_state import SupervisorState
 from agents.supervisor.classifier import SupervisorClassifier
 from configs.project_config import ProjectAgents
-from policies.models.constants import ChatRoles, PStatus, Status
-from policies.models.models import (PlannedTask, PlannedTaskQueue, RequirementsDocument,
-                                    Task, TaskQueue)
-from policies.models.supervisor_models import QueryList
+from policies.pydantic_models.constants import ChatRoles, PStatus, Status
+from policies.pydantic_models.models import (PlannedTask, PlannedTaskQueue, RequirementsDocument,
+                                             Task, TaskQueue)
+from policies.pydantic_models.supervisor_models import QueryList
 from prompts.supervisor_prompts import SupervisorPrompts
 from utils.decorators.decorator import measure_execution_time
 from utils.fuzzy_rag_cache import FuzzyRAGCache
 from utils.logs.logging_utils import logger
+
 
 # to avoid circular dependency
 if TYPE_CHECKING:

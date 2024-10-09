@@ -10,7 +10,7 @@ from typing import Any, Iterator, List
 
 from pydantic import BaseModel, Field
 
-from models.constants import Status
+from pydantic_models.constants import Status
 from utils.task_utils import generate_task_id
 
 
@@ -26,7 +26,7 @@ class Task(BaseModel):
 
     task_status: Status = Field(
         description="The current status indicating the progress of the task",
-        default= Status.NONE,
+        default=Status.NONE,
         required=True
     )
 
@@ -53,6 +53,7 @@ class Task(BaseModel):
         default=""
     )
 
+
 class PlannedTask(BaseModel):
     """
     A data model representing a task and its current state within a project
@@ -71,7 +72,7 @@ class PlannedTask(BaseModel):
 
     task_status: Status = Field(
         description="The current status indicating the progress of the task",
-        default= Status.NONE,
+        default=Status.NONE,
         required=True
     )
 
@@ -99,6 +100,7 @@ class PlannedTask(BaseModel):
         required=True
     )
 
+
 class RequirementsDocument(BaseModel):
     """
     This class encapsulates the various requirements of a project. 
@@ -108,7 +110,7 @@ class RequirementsDocument(BaseModel):
         description="A brief overview of the project.",
         default=""
     )
-    
+
     project_architecture: str = Field(
         description="Detailed information about the project's architecture.",
         default=""
@@ -179,7 +181,7 @@ class RequirementsDocument(BaseModel):
 ## Project License Information
 {self.project_license_information}
         """
-    
+
     def __getitem__(self, key: str) -> Any:
         """
         Allows getting attributes using square bracket notation.
@@ -197,11 +199,12 @@ class RequirementsDocument(BaseModel):
         else:
             raise KeyError(f"Key '{key}' not found in RequirementsDocument.")
 
+
 class TaskQueue(BaseModel):
     """
     A class to manage a queue of tasks with an index to keep track of the next task to process.
     """
-    
+
     next: int = Field(
         description="index of next field",
         default=0
@@ -215,7 +218,7 @@ class TaskQueue(BaseModel):
     def add_task(self, t: Task) -> None:
         """
         Adds a new task to the end of the queue.
-        
+
         Args:
             t (Task): The Task object to be added.
         """
@@ -224,7 +227,7 @@ class TaskQueue(BaseModel):
     def add_tasks(self, tasks: List[Task]) -> None:
         """
         Adds a list of tasks to the end of the queue.
-        
+
         Args:
             tasks (List[Task]): A list of Task objects to be added.
         """
@@ -233,7 +236,7 @@ class TaskQueue(BaseModel):
     def get_next_task(self) -> Task:
         """
         Retrieves and advances to the next task in the queue.
-        
+
         Returns:
             Task: The next Task object, or None if no tasks are left.
         """
@@ -246,19 +249,19 @@ class TaskQueue(BaseModel):
     def get_all_tasks(self) -> List[Task]:
         """
         Returns a list of all tasks in the queue.
-        
+
         Returns:
             List[Task]: A list containing all Task objects in the queue.
         """
         return self.queue
-    
+
     def update_task(self, updated_task: Task) -> None:
         """
         Updates an existing task in the queue with the new values from the updated_task.
 
         Args:
             updated_task (Task): The updated Task object with new values.
-        
+
         Raises:
             ValueError: If the task to be updated is not found in the queue.
         """
@@ -266,12 +269,13 @@ class TaskQueue(BaseModel):
             if task.task_id == updated_task.task_id:
                 self.queue[i] = updated_task
                 return
-        raise ValueError(f"Task with ID {updated_task.task_id} not found in the queue.")
+        raise ValueError(
+            f"Task with ID {updated_task.task_id} not found in the queue.")
 
     def __str__(self) -> str:
         """
         Returns a string representation of the TaskQueue.
-        
+
         Returns:
             str: A string representing the current tasks and the index of the next task.
         """
@@ -280,7 +284,7 @@ class TaskQueue(BaseModel):
     def __iter__(self) -> Iterator[Task]:
         """
         Returns an iterator over the tasks in the queue.
-        
+
         Returns:
             Iterator[Task]: An iterator for the tasks in the queue.
         """
@@ -289,17 +293,18 @@ class TaskQueue(BaseModel):
     def __len__(self) -> int:
         """
         Returns the number of tasks in the queue.
-        
+
         Returns:
             int: The number of tasks in the queue.
         """
         return len(self.queue)
-    
+
+
 class PlannedTaskQueue(BaseModel):
     """
     A class to manage a queue of tasks with an index to keep track of the next task to process.
     """
-    
+
     next: int = Field(
         description="index of next field",
         default=0
@@ -313,7 +318,7 @@ class PlannedTaskQueue(BaseModel):
     def add_task(self, t: PlannedTask) -> None:
         """
         Adds a new task to the end of the queue.
-        
+
         Args:
             t (Task): The Task object to be added.
         """
@@ -322,7 +327,7 @@ class PlannedTaskQueue(BaseModel):
     def add_tasks(self, tasks: List[PlannedTask]) -> None:
         """
         Adds a list of tasks to the end of the queue.
-        
+
         Args:
             tasks (List[Task]): A list of Task objects to be added.
         """
@@ -331,7 +336,7 @@ class PlannedTaskQueue(BaseModel):
     def get_next_task(self) -> PlannedTask:
         """
         Retrieves and advances to the next task in the queue.
-        
+
         Returns:
             Task: The next Task object, or None if no tasks are left.
         """
@@ -340,23 +345,23 @@ class PlannedTaskQueue(BaseModel):
             self.next += 1
             return task
         return None
-    
+
     def get_all_tasks(self) -> List[PlannedTask]:
         """
         Returns a list of all tasks in the queue.
-        
+
         Returns:
             List[PlannedTask]: A list containing all PlannedTask objects in the queue.
         """
         return self.queue
-    
+
     def update_task(self, updated_task: PlannedTask) -> None:
         """
         Updates an existing task in the queue with the new values from the updated_task.
 
         Args:
             updated_task (Task): The updated Task object with new values.
-        
+
         Raises:
             ValueError: If the task to be updated is not found in the queue.
         """
@@ -364,21 +369,22 @@ class PlannedTaskQueue(BaseModel):
             if task.task_id == updated_task.task_id:
                 self.queue[i] = updated_task
                 return
-        raise ValueError(f"Task with ID {updated_task.task_id} not found in the queue.")
+        raise ValueError(
+            f"Task with ID {updated_task.task_id} not found in the queue.")
 
     def __str__(self) -> str:
         """
         Returns a string representation of the TaskQueue.
-        
+
         Returns:
             str: A string representing the current tasks and the index of the next task.
         """
         return f"Tasks: {self.queue}, Next Index: {self.next}"
-    
+
     def __iter__(self) -> Iterator[PlannedTask]:
         """
         Returns an iterator over the tasks in the queue.
-        
+
         Returns:
             Iterator[PlannedTask]: An iterator for the tasks in the queue.
         """
@@ -387,7 +393,7 @@ class PlannedTaskQueue(BaseModel):
     def __len__(self) -> int:
         """
         Returns the number of tasks in the queue.
-        
+
         Returns:
             int: The number of tasks in the queue.
         """
