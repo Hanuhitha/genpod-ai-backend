@@ -205,29 +205,3 @@ class SupervisorPrompts():
         input_variables=["agent_descriptions", "history",
                          "current_agent", "current_status", "user_prompt", "visited_agents", "project_status", "project_flow", "flags"],
     )
-
- # Examples:
-
-    #     Selected Agent: Architect agent
-    #     Confidence: 0.95
-    #     Reason: The calling agent is RAG, so you have all the required information to proceed to the architectural agent. Also the project status is INITIAL and Task status is  NEW.
-
-    #     Selected Agent: RAG agent
-    #     Confidence: 0.95
-    #     Reason: The calling agent is Architect agent, so you have need more information to proceed. Also the project status is INITIAL and Task status is  AWAITING.
-
-    #     Selected Agent: Supervisor agent
-    #     Confidence: 0.95
-    #     Reason: The calling agent is Architect agent. Also the project status is EXECUTING and Task status is DONE.
-
-    #     Selected Agent: Planner agent
-    #     Confidence: 0.95
-    #     Reason: The calling agent is Supervisor agent. Also the project status is EXECUTING and Task status is NEW. The flag are_planned_task_in_progress is False
-
-    #     Selected Agent: Test Code Generator agent
-    #     Confidence: 0.95
-    #     Reason: The flag are_planned_task_in_progress is True, is_function_generation_required is True. is_test_code_generated is False
-
-    #     Selected Agent: Coder agent
-    #     Confidence: 0.95
-    #     Reason: The project status is EXECUTING. The flag are_planned_task_in_progress is True, is_code_generate is False.

@@ -1,0 +1,4 @@
+reviewer_prompts:
+  review_code_prompt:
+    template: |
+      You are a code reviewer.

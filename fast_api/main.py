@@ -299,7 +299,7 @@ async def get_additional_input(db: Session = Depends(get_db)):
 
 @app.get("/enhanced_prompt/{request_id}", response_model=LLMResponse)
 async def get_enhanced_prompt(request_id: int, db: Session = Depends(get_db)):
-    max_retries = 30
+    max_retries = 300
     retry_interval = 3
 
     try:

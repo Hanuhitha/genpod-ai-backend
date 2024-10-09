@@ -1,0 +1,76 @@
+rag_prompts:
+  retriever_grader_prompt:
+    template: |
+      You are a grader assessing relevance of a retrieved document to a user question.
+      Here is the retrieved document:
+
+      {document}
+
+      Here is the user question: {question}
+
+      If the document contains keywords related to the user question, grade it as relevant.
+      It does not need to be a stringent test. The goal is to filter out erroneous retrievals.
+
+      Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question.
+
+      Provide the binary score as a JSON with a single key 'score', without any markdown formatting or code blocks and no preamble or explanation.
+    input_variables:
+      - question
+      - document
+
+  halucination_grader_prompt:
+    template: |
+      You are a grader assessing whether an answer is grounded in / supported by a set of facts.
+
+      Here are the facts:
+      -------
+      {documents}
+      -------
+      Here is the answer: {generation}
+
+      Give a binary score 'yes' or 'no' score to indicate whether the answer is grounded in / supported by a set of facts.
+
+      Provide the binary score as a JSON with a single key 'score', without any markdown formatting or code blocks and no preamble or explanation.
+    input_variables:
+      - generation
+      - documents
+
+  re_write_prompt:
+    template: |
+      You are a question re-writer that converts an input question to a better version that is optimized for vectorstore retrieval. Look at the initial and formulate an improved question.
+
+      Here is the initial question:
+
+      {question}
+
+      Improved question with no preamble:
+    input_variables:
+      - generation
+      - question
+
+  answer_grader_prompt:
+    template: |
+      You are a grader assessing whether an answer is useful to resolve a question.
+
+      Here is the answer:
+      -------
+      {generation}
+      -------
+      Here is the question: {question}
+
+      Give a binary score 'yes' or 'no' to indicate whether the answer is useful to resolve a question.
+
+      Provide the binary score as a JSON with a single key 'score', without any markdown formatting or code blocks and no preamble or explanation.
+    input_variables:
+      - generation
+      - question
+
+  rag_generation_prompt:
+    template: |
+      Use the following context to answer the user's query. If you cannot answer, please respond with 'I don't know'.
+
+      User's Query:
+      {question}
+
+      Context:
+      {context}
