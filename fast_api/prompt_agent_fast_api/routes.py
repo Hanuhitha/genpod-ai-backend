@@ -10,7 +10,7 @@ from database.database import Database
 from configs.project_config import ProjectConfig
 import os
 from fast_api.prompt_agent_fast_api.models import ContinueConversationRequest, ConversationResponse, StartConversationRequest
-from models.constants import ChatRoles
+from pydantic_models.constants import ChatRoles
 
 # Router object
 router = APIRouter()

@@ -6,9 +6,9 @@ Agent graph state
 from typing_extensions import Annotated, TypedDict
 
 from agents.agent.state import State
-from models.constants import ChatRoles
-from models.models import PlannedTask, Task
-from models.tests_generator_models import FunctionSkeleton
+from pydantic_models.constants import ChatRoles
+from pydantic_models.models import PlannedTask, Task
+from pydantic_models.tests_generator_models import FunctionSkeleton
 
 
 class TestCoderState(TypedDict):

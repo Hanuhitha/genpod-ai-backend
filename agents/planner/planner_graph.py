@@ -5,7 +5,7 @@ from agents.agent.graph import Graph
 from agents.planner.planner_agent import PlannerAgent
 from agents.planner.planner_state import PlannerState
 from configs.project_config import ProjectGraphs
-from models.models import Task
+from pydantic_models.models import Task
 
 
 class PlannerWorkFlow(Graph[PlannerAgent]):

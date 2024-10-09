@@ -3,7 +3,7 @@
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 
-from models.coder_models import CodeGenerationPlan
+from pydantic_models.coder_models import CodeGenerationPlan
 
 
 class CoderPrompts:

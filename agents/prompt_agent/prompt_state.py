@@ -3,7 +3,7 @@
 
 from typing_extensions import Annotated, TypedDict
 from agents.agent.state import State
-from models.constants import ChatRoles
+from pydantic_models.constants import ChatRoles
 
 
 class PromptState(TypedDict):

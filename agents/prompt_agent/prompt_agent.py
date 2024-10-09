@@ -8,7 +8,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables.base import RunnableSequence
 from langchain_openai import ChatOpenAI
 import requests
-from models.constants import ChatRoles, PStatus, Status
+from pydantic_models.constants import ChatRoles, PStatus, Status
 
 from agents.agent.agent import Agent
 from agents.prompt_agent.prompt_state import PromptState

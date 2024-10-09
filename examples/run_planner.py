@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
 from agents.planner.planner_graph import PlannerWorkFlow
-from models.models import Status, Task
+from pydantic_models.models import Status, Task
 load_dotenv()
 
 if __name__ == "__main__":
