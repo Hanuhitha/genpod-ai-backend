@@ -3,7 +3,7 @@ from datetime import datetime
 from configs.database import get_client_local_db_file_path
 from database.database import Database
 from genpod.member import AgentMember
-from policies.pydantic_models.constants import Status
+from models.constants import Status
 from agents.supervisor.supervisor_state import SupervisorState
 from utils.logs.logging_utils import logger
 

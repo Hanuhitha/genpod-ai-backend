@@ -12,7 +12,7 @@ Note:
 Please refer to the individual files for more details about each model or Enum
 class.
 """
-from .constants import Status
+from .constants import Status, ChatRoles
 from .models import Task
 
-__all__ = ['Status', 'Task']
+__all__ = ['Status', 'Task', 'ChatRoles']

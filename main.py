@@ -72,15 +72,15 @@ if __name__ == "__main__":
 
     logger.info("metadata", metadata)
 
-    try:
-        response = requests.post(
-            "http://localhost:8000/metadata", json=metadata)
-        response.raise_for_status()  # Raise an exception for HTTP errors
+    # try:
+    #     response = requests.post(
+    #         "http://localhost:8000/metadata", json=metadata)
+    #     response.raise_for_status()  # Raise an exception for HTTP errors
 
-        returned_data = response.json()
-        logger.info("Meta data has been created! %s", returned_data)
-    except requests.exceptions.RequestException as e:
-        logger.error("Error creating metadata: %s", e)
+    #     returned_data = response.json()
+    #     logger.info("Meta data has been created! %s", returned_data)
+    # except requests.exceptions.RequestException as e:
+    #     logger.error("Error creating metadata: %s", e)
 
     try:
         response = requests.post(
@@ -107,6 +107,7 @@ if __name__ == "__main__":
         'status': False,
         'request_id': returned_data['request_id']
     }, graph_config)
+
     for response in prompt_response:
         if "__end__" not in response:
             continue

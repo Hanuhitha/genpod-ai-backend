@@ -5,9 +5,9 @@ Agent graph state
 from typing_extensions import Annotated, TypedDict
 
 from agents.agent.state import State
-from policies.pydantic_models.coder_models import CodeGenerationPlan
-from policies.pydantic_models.constants import ChatRoles
-from policies.pydantic_models.models import PlannedTask, Task
+from models.coder_models import CodeGenerationPlan
+from models.constants import ChatRoles
+from models.models import PlannedTask, Task
 
 
 class CoderState(TypedDict):
