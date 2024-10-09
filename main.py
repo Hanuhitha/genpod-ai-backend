@@ -6,7 +6,7 @@ import os
 import requests
 
 from agents.supervisor.supervisor_state import SupervisorState
-from agents.prompt.prompt_graph import PromptGraph
+from agents.prompt_agent.prompt_graph import PromptGraph
 from configs.database import get_client_local_db_file_path
 from configs.project_config import ProjectConfig
 from configs.project_path import set_project_path

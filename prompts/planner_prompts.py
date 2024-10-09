@@ -2,7 +2,7 @@
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import PromptTemplate
 
-from models.planner_models import Segregation
+from policies.models.planner_models import Segregation
 
 
 class PlannerPrompts:
@@ -75,10 +75,10 @@ class PlannerPrompts:
 
         Your response:
         """,
-            input_variables=["backlog", "deliverable", "context", "feedback"]
-        )
+        input_variables=["backlog", "deliverable", "context", "feedback"]
+    )
 
-    segregation_prompt: PromptTemplate =PromptTemplate(
+    segregation_prompt: PromptTemplate = PromptTemplate(
         template="""
         Objective:
         You are an intelligent assistant designed to assess whether completing a work package requires writing any functions. Use contextual understanding to accurately evaluate the tasks within the work package.
@@ -104,7 +104,7 @@ class PlannerPrompts:
         "{work_package}"
         """,
         input_variables=['work_package'],
-        partial_variables= {
+        partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=Segregation).get_format_instructions()
         }
     )

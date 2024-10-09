@@ -8,11 +8,11 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables.base import RunnableSequence
 from langchain_openai import ChatOpenAI
 import requests
-from models.constants import ChatRoles, PStatus, Status
+from policies.models.constants import ChatRoles, PStatus, Status
 
 
 from agents.agent.agent import Agent
-from agents.prompt.prompt_state import PromptState
+from agents.prompt_agent.prompt_state import PromptState
 from configs.project_config import ProjectAgents
 from prompts.prompt_prompts import PromptPrompts
 from langchain_core.output_parsers import JsonOutputParser

@@ -6,24 +6,24 @@ Agent graph state
 from typing_extensions import Annotated, TypedDict
 
 from agents.agent.state import State
-from models.constants import ChatRoles
-from models.models import PlannedTask, Task
-from models.tests_generator_models import FunctionSkeleton
+from policies.models.constants import ChatRoles
+from policies.models.models import PlannedTask, Task
+from policies.models.tests_generator_models import FunctionSkeleton
 
 
 class TestCoderState(TypedDict):
     """
     """
 
-    # @in 
+    # @in
     project_name: Annotated[
-        str, 
+        str,
         State.in_field(
             "The name of the project."
         )
     ]
 
-    # @in 
+    # @in
     project_folder_strucutre: Annotated[
         str,
         State.in_field(
@@ -32,9 +32,9 @@ class TestCoderState(TypedDict):
         )
     ]
 
-    # @in 
+    # @in
     requirements_document: Annotated[
-        str, 
+        str,
         State.in_field(
             "A comprehensive, well-structured document in markdown format that outlines "
             "the project's requirements derived from the user's request. This serves as a "
@@ -71,7 +71,7 @@ class TestCoderState(TypedDict):
             "members are working on."
         )
     ]
-        
+
     # @inout
     current_planned_task: Annotated[
         PlannedTask,
@@ -80,7 +80,7 @@ class TestCoderState(TypedDict):
             "that coder need to work on."
         )
     ]
-    
+
     # @inout
     messages: Annotated[
         list[tuple[ChatRoles, str]],
@@ -118,7 +118,7 @@ class TestCoderState(TypedDict):
     ]
 
     # @out
-    functions_skeleton:Annotated[
+    functions_skeleton: Annotated[
         FunctionSkeleton,
         State.out_field(
             "The well detailed function skeleton for the functions that are in the code."
@@ -126,7 +126,7 @@ class TestCoderState(TypedDict):
     ]
 
     # @out
-    commands_to_execute: Annotated[ 
+    commands_to_execute: Annotated[
         dict[str, str],
         State.out_field(
             "This field represents a dictionary of commands intended to be executed on a Linux terminal. Each key-value pair in the dictionary corresponds to an absolute path (the key) and a specific command (the value) to be executed at that path."
@@ -134,7 +134,7 @@ class TestCoderState(TypedDict):
     ]
 
     # @in
-    work_package:Annotated[
+    work_package: Annotated[
         str,
         State.in_field(
             "This contains the work package that needs to be segregated"

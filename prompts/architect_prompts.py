@@ -14,14 +14,14 @@ the Architect agent can effectively assist users in implementing their projects.
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 
-from models.architect_models import (ProjectDetails, QueryResult, TaskOutput,
-                                     TasksList)
+from policies.models.architect_models import (ProjectDetails, QueryResult, TaskOutput,
+                                              TasksList)
 
 
 class ArchitectPrompts:
     """
     ArchitectPrompts class contains templates for guiding the Architect agent in its tasks.
-    
+
     It includes templates for initial project requirements generation and for providing additional 
     information during project implementation. These templates ensure that the Architect agent can 
     effectively assist users in implementing their projects, adhering to best practices in 
@@ -93,9 +93,10 @@ class ArchitectPrompts:
             output format instructions:
             {format_instructions}
         """,
-        input_variables=['user_request','task_description','additional_information'],
-        partial_variables = {
-                "format_instructions": PydanticOutputParser(pydantic_object=TaskOutput).get_format_instructions()
+        input_variables=['user_request',
+                         'task_description', 'additional_information'],
+        partial_variables={
+            "format_instructions": PydanticOutputParser(pydantic_object=TaskOutput).get_format_instructions()
         }
     )
 
@@ -115,7 +116,7 @@ class ArchitectPrompts:
             {format_instructions}
         """,
         input_variables=['project_overview'],
-        partial_variables = {
+        partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=TaskOutput).get_format_instructions()
         }
     )
@@ -144,7 +145,7 @@ class ArchitectPrompts:
         {format_instructions}
         """,
         input_variables=["project_overview", "architecture"],
-        partial_variables = {
+        partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=TaskOutput).get_format_instructions()
         }
     )
@@ -171,8 +172,8 @@ class ArchitectPrompts:
             output format instructions:
             {format_instructions}
             """,
-        input_variables=["project_overview","architecture"],
-        partial_variables = {
+        input_variables=["project_overview", "architecture"],
+        partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=TaskOutput).get_format_instructions()
         }
     )
@@ -200,10 +201,11 @@ class ArchitectPrompts:
             output format instructions:
             {format_instructions}            
             """,
-        input_variables=["project_overview", "architecture", "microservice_design"],
-        partial_variables = {
+        input_variables=["project_overview",
+                         "architecture", "microservice_design"],
+        partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=TaskOutput).get_format_instructions()
-        }        
+        }
     )
 
     standards_prompt: PromptTemplate = PromptTemplate(
@@ -224,9 +226,9 @@ class ArchitectPrompts:
             {format_instructions}
             """,
         input_variables=["user_request", "task_description"],
-        partial_variables = {
+        partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=TaskOutput).get_format_instructions()
-        }            
+        }
     )
 
     implementation_details_prompt: PromptTemplate = PromptTemplate(
@@ -256,10 +258,11 @@ class ArchitectPrompts:
             output format instructions:
             {format_instructions}
             """,
-        input_variables=["architecture", "microservice_design", "folder_structure"],
-        partial_variables = {
+        input_variables=["architecture",
+                         "microservice_design", "folder_structure"],
+        partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=TaskOutput).get_format_instructions()
-        }            
+        }
     )
 
     license_details_prompt: PromptTemplate = PromptTemplate(
@@ -275,9 +278,9 @@ class ArchitectPrompts:
             {format_instructions}
             """,
         input_variables=["user_request", "license_text"],
-        partial_variables = {
+        partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=TaskOutput).get_format_instructions()
-        }            
+        }
     )
 
     project_details_prompt: PromptTemplate = PromptTemplate(

@@ -3,7 +3,7 @@
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 
-from models.coder_models import CodeGenerationPlan
+from policies.models.coder_models import CodeGenerationPlan
 
 
 class CoderPrompts:
@@ -54,7 +54,8 @@ class CoderPrompts:
         Unit Test cases:
         "{unit_test_cases}"
         """,
-        input_variables=['project_name', 'project_path', 'requirements_document', 'error_message', 'task', 'functions_skeleton', 'unit_test_cases'],
+        input_variables=['project_name', 'project_path', 'requirements_document',
+                         'error_message', 'task', 'functions_skeleton', 'unit_test_cases'],
         partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=CodeGenerationPlan).get_format_instructions()
         }

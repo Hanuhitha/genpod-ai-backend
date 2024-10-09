@@ -3,8 +3,8 @@
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 from agents.agent.graph import Graph
-from agents.prompt.prompt_agent import PromptAgent
-from agents.prompt.prompt_state import PromptState
+from agents.prompt_agent.prompt_agent import PromptAgent
+from agents.prompt_agent.prompt_state import PromptState
 from configs.project_config import ProjectGraphs
 
 

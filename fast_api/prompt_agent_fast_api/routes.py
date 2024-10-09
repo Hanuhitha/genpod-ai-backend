@@ -2,16 +2,16 @@
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from agents.prompt.prompt_agent import PromptAgent
-from agents.prompt.prompt_graph import PromptGraph
-from agents.prompt.prompt_state import PromptState
+from agents.prompt_agent.prompt_agent import PromptAgent
+from agents.prompt_agent.prompt_graph import PromptGraph
+from agents.prompt_agent.prompt_state import PromptState
 from configs.database import get_client_local_db_file_path
 from database.database import Database
 from configs.project_config import ProjectConfig
 import os
-from fast_api.models import ContinueConversationRequest, ConversationResponse, StartConversationRequest
+from fast_api.prompt_agent_fast_api.models import ContinueConversationRequest, ConversationResponse, StartConversationRequest
 
-from models.constants import ChatRoles
+from policies.models.constants import ChatRoles
 
 # Router object
 router = APIRouter()

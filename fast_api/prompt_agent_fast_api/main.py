@@ -10,8 +10,9 @@ from fastapi import FastAPI, HTTPException
 from configs.database import get_client_local_db_file_path
 from database.database import Database
 from database.tables.conversation import Conversation
-from fast_api.models import LLMResponse, Metadata, ProjectInput, UserResponse
 from fastapi.middleware.cors import CORSMiddleware
+
+from fast_api.prompt_agent_fast_api.models import LLMResponse, Metadata, ProjectInput, UserResponse
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 

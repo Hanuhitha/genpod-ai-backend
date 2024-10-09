@@ -4,12 +4,12 @@
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 
-from models.tests_generator_models import FunctionSkeleton, TestCodeGeneration
+from policies.models.tests_generator_models import FunctionSkeleton, TestCodeGeneration
 
 
 class TestGeneratorPrompts:
 
-    test_generation_prompt: PromptTemplate =PromptTemplate(
+    test_generation_prompt: PromptTemplate = PromptTemplate(
         template="""
         As an expert programmer specialized in Unit test case generation, generate unit test case for the tasks that have functionality which requires unit test cases. In a test driven development you play a crucial role in creating the unit test cases first using which user will create their functionality to abide by the test cases. You are collaborating with a team to complete an end-to-end project 
         requested by a user. You should generate the unit test cases using the functions skeletons that are provided 
@@ -49,12 +49,13 @@ class TestGeneratorPrompts:
         These are the functions skeletons dictionary the key contains the path where the functions are supposed to be created and value contains the function skeleton with function name, input parameters, return type and function description for which you need to create unit test cases 
         "{functions_skeleton}"
         """,
-        input_variables=['project_name', 'project_path', 'requirements_document', 'folder_structure', 'error_message', 'task' , 'functions_skeleton'],
-        partial_variables= {
+        input_variables=['project_name', 'project_path', 'requirements_document',
+                         'folder_structure', 'error_message', 'task', 'functions_skeleton'],
+        partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=TestCodeGeneration).get_format_instructions()
         }
     )
-    
+
     skeleton_generation_prompt: PromptTemplate = PromptTemplate(
         template="""
         You are a highly skilled software developer assistant. Your task is to generate a detailed function skeleton based on the provided description.
@@ -91,8 +92,9 @@ class TestGeneratorPrompts:
         Now, here is your task to complete.
         {task}.
         """,
-        input_variables=['project_name', 'project_path', 'requirements_document', 'folder_structure', 'error_message', 'task' ],
-        partial_variables= {
+        input_variables=['project_name', 'project_path',
+                         'requirements_document', 'folder_structure', 'error_message', 'task'],
+        partial_variables={
             "format_instructions": PydanticOutputParser(pydantic_object=FunctionSkeleton).get_format_instructions()
         }
     )

@@ -7,11 +7,11 @@ state.
 from typing_extensions import Annotated, TypedDict
 
 from agents.agent.state import State
-from models.constants import ChatRoles
-from models.models import RequirementsDocument, Task
+from policies.models.constants import ChatRoles
+from policies.models.models import RequirementsDocument, Task
 
 
-class ArchitectState(TypedDict): 
+class ArchitectState(TypedDict):
     """
     ArchitectState Class
 
@@ -39,7 +39,7 @@ class ArchitectState(TypedDict):
         messages (list[tuple[ChatRoles, str]]): A chronological list of tuples representing the 
         conversation history between the system, user, and AI. Each tuple contains a role 
         identifier (e.g., 'AI', 'tool', 'user', 'system') and the corresponding message.
-        
+
         current_task (Task): The Task object currently in focus, representing the active task 
         that team members are working on.
 
@@ -58,7 +58,7 @@ class ArchitectState(TypedDict):
 
         query_answered (bool): A boolean flag indicating whether the task has been answered
     """
-    # @in 
+    # @in
     original_user_input: Annotated[
         str,
         State.in_field(
@@ -94,7 +94,7 @@ class ArchitectState(TypedDict):
             "This path is used to store all the project-related files and directories."
         )
     ]
-    
+
     # @in
     license_text: Annotated[
         str,
@@ -106,7 +106,7 @@ class ArchitectState(TypedDict):
 
     # @inout
     messages: Annotated[
-        list[tuple[ChatRoles, str]], 
+        list[tuple[ChatRoles, str]],
         State.inout_field(
             "A chronological list of tuples representing the conversation history between the "
             "system, user, and AI. Each tuple contains a role identifier (e.g., 'AI', 'tool', "
@@ -125,7 +125,7 @@ class ArchitectState(TypedDict):
 
     # @out
     project_name: Annotated[
-        str, 
+        str,
         State.out_field(
             "The name of the project."
         )
@@ -133,7 +133,7 @@ class ArchitectState(TypedDict):
 
     # @out
     requirements_document: Annotated[
-        RequirementsDocument, 
+        RequirementsDocument,
         State.out_field(
             "A comprehensive, well-structured document in markdown format that outlines "
             "the project's requirements derived from the user's request. This serves as a "

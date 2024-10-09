@@ -3,7 +3,7 @@
 from langchain_core.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 
-from models.prompt_models import Prompt_Generation, Decision_Agent
+from policies.models.prompt_models import Prompt_Generation, Decision_Agent
 
 
 class PromptPrompts:

@@ -4,11 +4,11 @@ from typing import List
 from typing_extensions import Annotated, TypedDict
 
 from agents.agent.state import State
-from models.coder_models import CodeGenerationPlan
-from models.constants import ChatRoles, PStatus
-from models.models import (PlannedTask, PlannedTaskQueue, RequirementsDocument,
-                           Task, TaskQueue)
-from models.tests_generator_models import FunctionSkeleton
+from policies.models.coder_models import CodeGenerationPlan
+from policies.models.constants import ChatRoles, PStatus
+from policies.models.models import (PlannedTask, PlannedTaskQueue, RequirementsDocument,
+                                    Task, TaskQueue)
+from policies.models.tests_generator_models import FunctionSkeleton
 
 
 class SupervisorState(TypedDict):
