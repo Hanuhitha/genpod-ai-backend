@@ -3,22 +3,25 @@
 import os
 from typing import Literal
 import time
+from pydantic import ValidationError
 import requests
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables.base import RunnableSequence
 from langchain_openai import ChatOpenAI
 import requests
-from pydantic_models.constants import ChatRoles, PStatus, Status
-
+from policies.pydantic_models.prompt_models import Prompt_Generation, Decision_Agent
+from prompt_loader.prompt_loader import load_prompts_from_yaml
 from agents.agent.agent import Agent
 from agents.prompt_agent.prompt_state import PromptState
 from configs.project_config import ProjectAgents
-from prompts.prompt_prompts import PromptPrompts
 from langchain_core.output_parsers import JsonOutputParser
+from policies.pydantic_models.constants import ChatRoles
 from utils.logs.logging_utils import logger
+from langchain_core.prompts import PromptTemplate
+from langchain.output_parsers import PydanticOutputParser
 
 
-class PromptAgent(Agent[PromptState, PromptPrompts]):
+class PromptAgent(Agent[PromptState, None]):
     """
     """
     prompt_node_name: str  # The entry point of the graph
@@ -36,14 +39,79 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
             ProjectAgents.prompt.agent_id,
             ProjectAgents.prompt.agent_name,
             PromptState(),
-            PromptPrompts(),
+            None,
             llm
         )
         self.prompt_node_name = "prompt_node"  # The entry point of the graph
         self.refined_prompt_node_name = "refined_prompt_node"  # END point of the graph
 
-        self.max_retries = 30
-        self.retry_interval = 2
+        yaml_file_path = "/opt/genpod/system_prompts_default_yaml/prompt_enhancer_prompt.yml"
+
+        # configurable_file_path = "/opt/genpod/system_prompts_configurable_yaml/prompt_enhancer_prompt.yml"
+
+        self.max_retries = 500
+        self.retry_interval = 3
+        # try:
+        #     self.prompts = load_prompts_from_yaml(configurable_file_path)
+        #     logger.info("Prompts loaded successfully from YAML.")
+        # except (FileNotFoundError, ValidationError) as e:
+        #     logger.error(f"Failed to load prompts: {e}")
+        #     raise
+
+        try:
+            self.prompts = load_prompts_from_yaml(yaml_file_path)
+            logger.info("Prompts loaded successfully from YAML.")
+        except (FileNotFoundError, ValidationError) as e:
+            logger.error(f"Failed to load prompts: {e}")
+            raise
+
+    #  # Paths to YAML configuration files
+    #     system_yaml_file_path = "/opt/genpod/system_prompts_yaml/prompt_enhancer_prompt.yml"
+    #     user_yaml_file_path = "/opt/genpod/system_prompts_configurable_yaml/prompt_enhancer_prompt.yml"
+
+    #     self.max_retries = 500
+    #     self.retry_interval = 3
+
+    #     # Load system prompts
+    #     try:
+    #         self.system_config = load_prompts_from_yaml(system_yaml_file_path)
+    #         logger.info("System prompts loaded successfully from YAML.")
+    #     except (FileNotFoundError, ValidationError) as e:
+    #         logger.error(f"Failed to load system prompts: {e}")
+    #         raise
+
+    #     # Load user prompts
+    #     try:
+    #         self.user_config = load_prompts_from_yaml(user_yaml_file_path)
+    #         logger.info("User prompts loaded successfully from YAML.")
+    #     except (FileNotFoundError, ValidationError) as e:
+    #         logger.error(f"Failed to load user prompts: {e}")
+    #         raise
+
+    #     user_input_variables = self.configurable_prompts.prompt_generation_prompt.user_input_variables
+
+        prompt_template = self.prompts.prompt_generation_prompt.template
+        input_variables = self.prompts.prompt_generation_prompt.input_variables
+        partial_variables = self.prompts.prompt_generation_prompt.partial_variables
+        partial_variables['format_instructions'] = PydanticOutputParser(
+            pydantic_object=Prompt_Generation).get_format_instructions()
+        self.prompts.prompt_generation_prompt = PromptTemplate(
+            template=prompt_template,
+            input_variables=input_variables,
+            partial_variables=partial_variables
+        )
+
+        decision_template = self.prompts.decision_agent_prompt.template
+        input_variables = self.prompts.decision_agent_prompt.input_variables
+        partial_variables = self.prompts.decision_agent_prompt.partial_variables
+        partial_variables['format_instructions'] = PydanticOutputParser(
+            pydantic_object=Decision_Agent).get_format_instructions()
+        self.prompts.decision_agent_prompt = PromptTemplate(
+            template=decision_template,
+            input_variables=input_variables,
+            partial_variables=partial_variables
+        )
+        # self.refined_input_chain = self.prompts.prompt_generation_prompt
 
         self.refined_input_chain = (
             self.prompts.prompt_generation_prompt
@@ -51,6 +119,7 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
             | JsonOutputParser()
         )
 
+        # Create decision agent chain using the `|` operator for compatibility with LangChain
         self.decision_agent_chain = (
             self.prompts.decision_agent_prompt
             | self.llm
@@ -109,7 +178,7 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
             # Invoke the refined input chain for the first time
             refined_response = self.refined_input_chain.invoke({
                 "original_user_input": self.state['original_user_input'],
-                "messages": self.state['messages']
+                "messages": self.state['messages'],
             })
 
             self.add_message((

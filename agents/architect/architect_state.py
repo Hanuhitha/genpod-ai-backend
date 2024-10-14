@@ -7,8 +7,8 @@ state.
 from typing_extensions import Annotated, TypedDict
 
 from agents.agent.state import State
-from pydantic_models.constants import ChatRoles
-from pydantic_models.models import RequirementsDocument, Task
+from policies.pydantic_models.constants import ChatRoles
+from policies.pydantic_models.models import RequirementsDocument, Task
 
 
 class ArchitectState(TypedDict):

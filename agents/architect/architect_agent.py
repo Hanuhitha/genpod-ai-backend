@@ -14,9 +14,9 @@ from typing_extensions import Literal
 from agents.agent.agent import Agent
 from agents.architect.architect_state import ArchitectState
 from configs.project_config import ProjectAgents
-from pydantic_models.architect_models import ProjectDetails, QueryResult, TaskOutput
-from pydantic_models.constants import ChatRoles, PStatus, Status
-from pydantic_models.models import RequirementsDocument, Task
+from policies.pydantic_models.architect_models import ProjectDetails, QueryResult, TaskOutput
+from policies.pydantic_models.constants import ChatRoles, PStatus, Status
+from policies.pydantic_models.models import RequirementsDocument, Task
 from prompts.architect_prompts import ArchitectPrompts
 from tools.code import CodeFileWriter
 from utils.logs.logging_utils import logger

@@ -7,8 +7,8 @@ This document provides an overview of the test code and its outputs for the Arch
 The main driving code is as follows:
 
 ```python
-from pydantic_models.models import Task
-from pydantic_models.constants import Status
+from policies.pydantic_models.models import Task
+from policies.pydantic_models.constants import Status
 
 from agents.architect.graph import ArchitectGraph
 from langchain_openai import ChatOpenAI

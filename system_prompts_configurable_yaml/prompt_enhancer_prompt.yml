@@ -1,0 +1,22 @@
+prompt_prompts:
+  prompt_generation_prompt:
+    user_template: |
+      Please transform my prompt into a well-structured numbered list. For each item in the list, include relevant test cases to validate its functionality.
+      
+      **Additional Information:**
+      {additional_info}
+      
+      **Example:**
+      1. **Feature A**
+         - **Description:** Brief description of Feature A.
+         - **Test Cases:**
+           - Test Case 1: Description of Test Case 1.
+           - Test Case 2: Description of Test Case 2.
+      2. **Feature B**
+         - **Description:** Brief description of Feature B.
+         - **Test Cases:**
+           - Test Case 1: Description of Test Case 1.
+           - Test Case 2: Description of Test Case 2.
+
+    user_input_variables:
+      - additional_info

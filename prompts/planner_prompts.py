@@ -2,7 +2,7 @@
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import PromptTemplate
 
-from pydantic_models.planner_models import Segregation
+from policies.pydantic_models.planner_models import Segregation
 
 
 class PlannerPrompts:

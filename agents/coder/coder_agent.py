@@ -10,8 +10,8 @@ from langchain_openai import ChatOpenAI
 from agents.agent.agent import Agent
 from agents.coder.coder_state import CoderState
 from configs.project_config import ProjectAgents
-from pydantic_models.coder_models import CodeGenerationPlan
-from pydantic_models.constants import ChatRoles, Status
+from policies.pydantic_models.coder_models import CodeGenerationPlan
+from policies.pydantic_models.constants import ChatRoles, Status
 from prompts.coder_prompts import CoderPrompts
 from tools.code import CodeFileWriter
 from tools.license import License

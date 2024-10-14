@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from agents.tests_generator.tests_generator_graph import TestCoderGraph
 from langchain_ollama import OllamaLLM
 from langchain_openai import ChatOpenAI
-from pydantic_models.models import Status, Task
+from policies.pydantic_models.models import Status, Task
 
 load_dotenv()
 

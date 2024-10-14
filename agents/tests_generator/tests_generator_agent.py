@@ -10,8 +10,8 @@ from typing_extensions import Literal
 from agents.agent.agent import Agent
 from agents.tests_generator.tests_generator_state import TestCoderState
 from configs.project_config import ProjectAgents
-from pydantic_models.constants import ChatRoles, Status
-from pydantic_models.tests_generator_models import FunctionSkeleton, TestCodeGeneration
+from policies.pydantic_models.constants import ChatRoles, Status
+from policies.pydantic_models.tests_generator_models import FunctionSkeleton, TestCodeGeneration
 from prompts.tests_generator_prompts import TestGeneratorPrompts
 from tools.code import CodeFileWriter
 from tools.shell import Shell
