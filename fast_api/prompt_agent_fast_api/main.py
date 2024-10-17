@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fast_api.prompt_agent_fast_api.models import LLMResponse, Metadata, ProjectInput, UserResponse
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
+from fastapi import WebSocket, WebSocketDisconnect
 
 app = FastAPI(title="LLM Agent API", version="1.0.0")
 
@@ -185,7 +186,6 @@ async def post_enhanced_input(input: LLMResponse, db: Session = Depends(get_db))
 
         logger.info("Project Input has been created!", enhanced_conversation)
 
-        # Return the newly created conversation
         return enhanced_conversation
 
     except Exception as e:
@@ -320,3 +320,36 @@ async def get_enhanced_prompt(request_id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=500, detail=f"Error retrieving enhanced prompt: {str(e)}"
         )
+
+
+@app.websocket("/ws/enhanced_prompt/{request_id}")
+async def websocket_enhanced_prompt(websocket: WebSocket, request_id: int, db: Session = Depends(get_db)):
+    await websocket.accept()
+
+    try:
+        max_retries = 300
+        retry_interval = 3
+
+        for _ in range(max_retries):
+            conversation = db.query(Conversation).filter(
+                Conversation.request_id == request_id).first()
+
+            if conversation and conversation.llm_output_prompt_message_response:
+                await websocket.send_json({
+                    "status": "success",
+                    "llm_response": conversation.llm_output_prompt_message_response
+                })
+                await websocket.close()
+                return
+
+            await asyncio.sleep(retry_interval)
+
+        await websocket.send_json({
+            "status": "error",
+            "message": "Enhanced prompt not found."
+        })
+        await websocket.close()
+
+    except WebSocketDisconnect:
+        print(
+            f"Client disconnected while waiting for enhanced prompt: {request_id}")
