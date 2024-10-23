@@ -1,5 +1,6 @@
 """
 """
+from fastapi import WebSocket
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 from agents.agent.graph import Graph
@@ -12,13 +13,14 @@ class PromptGraph(Graph[PromptAgent]):
     """
     """
 
-    def __init__(self,  llm: ChatOpenAI, persistance_db_path: str) -> None:
+    def __init__(self,  llm: ChatOpenAI, persistance_db_path: str, websocket: WebSocket, is_async: bool) -> None:
         """"""
         super().__init__(
             ProjectGraphs.prompt.graph_id,
             ProjectGraphs.prompt.graph_name,
-            PromptAgent(llm),
-            persistance_db_path
+            PromptAgent(llm, websocket),
+            persistance_db_path,
+            is_async=is_async
         )
 
         self.compile_graph_with_persistence()

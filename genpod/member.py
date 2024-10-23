@@ -69,6 +69,20 @@ class AgentMember(Generic[GenericAgentState, GenericAgentGraph]):
 
         return self.graph.app.stream(input, graph_config)
 
+    def astream(self, input: Dict[str, Any] | Any) -> Iterator[Dict[str, GenericAgentState]]:
+        """
+        """
+        graph_config = {
+            "configurable": {
+                "thread_id": self.thread_id,
+                "channel_version": 0
+            }
+        }
+        if self.recursion_limit != -1:
+            graph_config['recursion_limit'] = self.recursion_limit
+
+        return self.graph.app.astream(input, graph_config)
+
     def invoke(self, input: Dict[str, Any] | Any) -> GenericAgentState:
         """
         """

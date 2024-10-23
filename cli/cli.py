@@ -7,13 +7,79 @@ from rich.prompt import Prompt
 from rich.progress import Progress, SpinnerColumn, TextColumn
 import time
 import websockets
+from websockets.exceptions import ConnectionClosedOK
+
 import asyncio
 
 app = typer.Typer()
 console = Console()
 
 API_URL = "http://localhost:8000"
-WS_URL = "ws://localhost:8000/ws/enhanced_prompt"
+WS_URLL = "ws://localhost:8001/ws/enhanced_prompt"
+WS_URL = "ws://localhost:8001/ws/conversation"
+
+
+@app.command()
+def start_conversation():
+    """
+    Start the WebSocket conversation with the LLM agent via WebSockets.
+    """
+    request_id = Prompt.ask("Request ID")
+    user_input_prompt_message = Prompt.ask("User Input Prompt Message")
+
+    asyncio.run(websocket_conversation(request_id, user_input_prompt_message))
+
+
+async def websocket_conversation(request_id: str, user_input_prompt_message: str):
+    """
+    WebSocket connection to submit project info and handle conversation with the server.
+    """
+    try:
+        async with websockets.connect(f"{WS_URL}/{request_id}", ping_timeout=12000, close_timeout=12000) as websocket:
+            console.print(
+                f"[yellow]Connected to WebSocket for Request ID: {request_id}[/yellow]")
+
+            # Step 1: Send the initial project info to the WebSocket server
+            project_payload = {
+                "request_id": request_id,
+                "user_input_prompt_message": user_input_prompt_message
+            }
+            post_response = requests.post(
+                f"{API_URL}/project_info", json=project_payload)
+            if post_response.status_code == 200:
+                console.print(
+                    f"[green]Project information submitted successfully![/green]")
+            else:
+                console.print(
+                    f"[red]Failed to submit project info: {post_response.text}[/red]")
+                return
+            await websocket.send(str(project_payload))
+            console.print(
+                f"[blue]Sent project input: {user_input_prompt_message}[/blue]")
+
+            # Step 2: Wait for the server's response (via FastAPI and the Prompt Agent)
+            while True:
+                response = await websocket.recv()
+                console.print(f"[green]Server Response: {response}[/green]")
+
+                # Ask if the user wants to provide additional input
+                additional_input = Prompt.ask(
+                    "Provide additional input (or type 'exit' to stop)")
+
+                # Send additional input to the server
+                additional_payload = {
+                    "request_id": request_id,
+                    "additional_input": additional_input
+                }
+                await websocket.send(str(additional_payload))
+                console.print(
+                    f"[blue]Sent additional input: {additional_input}[/blue]")
+
+                if additional_input.lower() == 'exit':
+                    await websocket.close()
+                    break
+    except ConnectionClosedOK:
+        await websocket.close()
 
 
 @app.command()
@@ -182,7 +248,7 @@ async def listen_for_prompt(request_id: str):
     Connect to the WebSocket server and listen for the enhanced prompt.
     """
     try:
-        async with websockets.connect(f"{WS_URL}/{request_id}") as websocket:
+        async with websockets.connect(f"{WS_URLL}/{request_id}") as websocket:
             console.print(
                 "[yellow]Connected to WebSocket... Waiting for the LLM response...[/yellow]")
 
@@ -206,3 +272,51 @@ async def listen_for_prompt(request_id: str):
 
 if __name__ == "__main__":
     app()
+
+
+# @app.command()
+# def start_conversation():
+#     """
+#     Start the WebSocket conversation with the LLM agent via WebSockets.
+#     """
+
+#     request_id = Prompt.ask("Request ID")
+#     user_input_prompt_message = Prompt.ask("User Input Prompt Message")
+
+#     asyncio.run(websocket_conversation(request_id, user_input_prompt_message))
+
+
+# async def websocket_conversation(request_id: str, user_input_prompt_message: str):
+#     """
+#     WebSocket connection that submits project info and handles conversation with the server.
+#     """
+
+#     async with websockets.connect(f"{WS_URL}/{request_id}") as websocket:
+#         console.print(
+#             f"[yellow]Connected to WebSocket for Request ID: {request_id}[/yellow]")
+
+#         # Step 1: Send the initial project info
+#         project_payload = {
+#             "user_input_prompt_message": user_input_prompt_message
+#         }
+#         await websocket.send(str(project_payload))
+#         console.print(
+#             f"[blue]Sent project input: {user_input_prompt_message}[/blue]")
+
+#         # Step 2: Wait for the LLM's response or server updates
+#         while True:
+#             response = await websocket.recv()
+#             console.print(f"[green]{response}[/green]")
+
+#             # Ask for additional input after receiving a response
+#             additional_input = Prompt.ask(
+#                 "Do you want to send additional input? (Type 'no' to quit)")
+#             if additional_input.lower() == 'no':
+#                 break
+
+#             additional_payload = {
+#                 "additional_input": additional_input
+#             }
+#             await websocket.send(str(additional_payload))
+#             console.print(
+#                 f"[blue]Sent additional input: {additional_input}[/blue]")

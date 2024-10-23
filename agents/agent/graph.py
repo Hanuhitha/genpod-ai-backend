@@ -2,12 +2,14 @@ import io
 from typing import Generic, TypeVar
 
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
 from PIL import Image
 from typing_extensions import Any
 
 GenericAgent = TypeVar('GenericAgent', bound=Any)
+
 
 class Graph(Generic[GenericAgent]):
     """
@@ -17,7 +19,7 @@ class Graph(Generic[GenericAgent]):
         id (str): Unique identifier for the graph.
         name (str): Name of the graph.
         agent (GenericAgent): The agent associated with the graph.
-        memory (SqliteSaver): The persistence mechanism for saving the graph state.
+        memory (SqliteSaver/AsyncSqliteSaver): The persistence mechanism for saving the graph state.
         app (CompiledGraph): The compiled state graph.
     """
 
@@ -28,7 +30,7 @@ class Graph(Generic[GenericAgent]):
     memory: SqliteSaver
     app: CompiledGraph
 
-    def __init__(self, id: str, name: str, agent: GenericAgent, persistence_db_path: str) -> None:
+    def __init__(self, id: str, name: str, agent: GenericAgent, persistence_db_path: str, is_async: bool = False) -> None:
         """
         Constructor for the Graph class.
 
@@ -41,8 +43,12 @@ class Graph(Generic[GenericAgent]):
         self.id = id
         self.name = name
         self.agent = agent
-        self.memory = SqliteSaver.from_conn_string(persistence_db_path)
-        self.app = None 
+        self.is_async = is_async
+        self.memory = AsyncSqliteSaver.from_conn_string(
+            persistence_db_path) if self.is_async else SqliteSaver.from_conn_string(persistence_db_path)
+        # self.memory = None if self.is_async else SqliteSaver.from_conn_string(
+        # persistence_db_path)
+        self.app = None
 
     def compile_graph_with_persistence(self) -> None:
         """
@@ -59,9 +65,10 @@ class Graph(Generic[GenericAgent]):
         """
         if self.app is None:
             raise RuntimeError("Graph has not been compiled yet.")
-        
+
         try:
-            img = Image.open(io.BytesIO(self.app.get_graph().draw_mermaid_png()))
+            img = Image.open(io.BytesIO(
+                self.app.get_graph().draw_mermaid_png()))
             img.show()
         except Exception as e:
             print(f"Failed to display graph: {e}")
@@ -74,7 +81,7 @@ class Graph(Generic[GenericAgent]):
             StateGraph: The state graph for the agent.
         """
         raise NotImplementedError("Subclasses must implement this method.")
-    
+
     def get_current_state(self) -> Any:
         """
         Fetches the current state of the graph. Must be implemented by subclasses.

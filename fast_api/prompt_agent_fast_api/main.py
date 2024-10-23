@@ -7,7 +7,9 @@ from datetime import datetime
 import sqlite3
 from venv import logger
 from fastapi import FastAPI, HTTPException
+from agents.prompt_agent.prompt_agent import PromptAgent
 from configs.database import get_client_local_db_file_path
+from configs.project_config import LLMConfig
 from database.database import Database
 from database.tables.conversation import Conversation
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,27 +18,30 @@ from fast_api.prompt_agent_fast_api.models import LLMResponse, Metadata, Project
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from fastapi import WebSocket, WebSocketDisconnect
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 app = FastAPI(title="LLM Agent API", version="1.0.0")
 
 user_project_details = []
 
 enhanced_input = ""
-
+active_connections = {}
 additonal_input = []
 request_id = 0
 response_id = 0
 count = 0
 meta_data = []
 
+prompt_agent = PromptAgent(LLMConfig, WebSocket)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[" all "],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 DATABASE_PATH = get_client_local_db_file_path()
 db = Database(DATABASE_PATH)
@@ -237,7 +242,6 @@ async def update_conversation(request_id: str, update_data: LLMResponse, db: Ses
     try:
         conversation = db.query(Conversation).filter(
             Conversation.request_id == request_id,
-            Conversation.response_id.isnot(None)
         ).first()
 
         if conversation:
@@ -353,3 +357,110 @@ async def websocket_enhanced_prompt(websocket: WebSocket, request_id: int, db: S
     except WebSocketDisconnect:
         print(
             f"Client disconnected while waiting for enhanced prompt: {request_id}")
+
+
+@app.websocket("/ws/conversation/{request_id}")
+async def websocket_conversation(websocket: WebSocket, request_id: int, db: Session = Depends(get_db)):
+    await websocket.accept()
+    active_connections[request_id] = websocket
+    try:
+        while True:
+            # Wait for messages from the CLI
+            message = await websocket.receive_text()
+            message_data = eval(message)
+
+            # Store project input in the DB
+            if "user_input_prompt_message" in message_data:
+                project_input = message_data['user_input_prompt_message']
+                new_conversation = Conversation(
+                    request_id=request_id,
+                    user_input_prompt_message=project_input,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow()
+                )
+                db.add(new_conversation)
+                db.commit()
+
+                await websocket.send_text(f"Project input received for Request ID {request_id}")
+
+            # Handle additional input
+            elif "additional_input" in message_data:
+                additional_input = message_data['additional_input']
+                conversation = Conversation(
+                    request_id=request_id,
+                    user_input_prompt_message=additional_input,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow()
+                )
+                db.add(conversation)
+                db.commit()
+
+                await websocket.send_text(f"Additional input received for Request ID {request_id}")
+
+    except WebSocketDisconnect:
+        del active_connections[request_id]
+        print(f"Client {request_id} disconnected.")
+
+
+# @app.websocket("/ws/conversation/{request_id}")
+# async def websocket_conversation(websocket: WebSocket, request_id: int, db: Session = Depends(get_db)):
+#     await websocket.accept()
+#     active_connections[request_id] = websocket
+#     try:
+#         while True:
+#             # Step 1: Receive the input from the client (CLI)
+#             message = await websocket.receive_text()
+#             message_data = eval(message)
+
+#             # Handle project input
+#             if "user_input_prompt_message" in message_data:
+#                 project_input = message_data['user_input_prompt_message']
+#                 # Save the project input to the database
+#                 new_conversation = Conversation(
+#                     request_id=request_id,
+#                     user_input_prompt_message=project_input,
+#                     created_at=datetime.utcnow(),
+#                     updated_at=datetime.utcnow()
+#                 )
+#                 db.add(new_conversation)
+#                 db.commit()
+#                 db.refresh(new_conversation)
+
+#                 # Step 2: Process the input with the Prompt Agent
+#                 refined_response = prompt_agent.chat_node({
+#                     'original_user_input': project_input,
+#                     'messages': [],
+#                     'status': False,
+#                     'request_id': request_id
+#                 })
+
+#                 # Step 3: Send the refined response back to the client
+#                 await websocket.send_text(f"Refined Response: {refined_response['messages'][-1]}")
+
+#             # Handle additional input
+#             elif "additional_input" in message_data:
+#                 additional_input = message_data['additional_input']
+#                 new_conversation = Conversation(
+#                     request_id=request_id,
+#                     user_input_prompt_message=additional_input,
+#                     created_at=datetime.utcnow(),
+#                     updated_at=datetime.utcnow()
+#                 )
+#                 db.add(new_conversation)
+#                 db.commit()
+#                 db.refresh(new_conversation)
+
+#                 # Process the additional input through the Prompt Agent
+#                 refined_response = prompt_agent.chat_node({
+#                     'original_user_input': additional_input,
+#                     'messages': [],
+#                     'status': False,
+#                     'request_id': request_id
+#                 })
+
+#                 # Send the refined additional input response
+#                 await websocket.send_text(f"Additional Input Refined: {refined_response['messages'][-1]}")
+
+#     except WebSocketDisconnect:
+#         del active_connections[request_id]
+#         print(f"Client {request_id} disconnected.")
