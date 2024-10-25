@@ -62,57 +62,16 @@ async def handle_connection(websocket, path):
             if not response['status']:
                 # Send refined response to CLI via WebSocket
                 logger.info(f'{response}')
-                # await websocket.send(f"Refined response: {response['llm_output_prompt_message_response']}")
+
             else:
                 break
 
-        # console.print(f"[blue]Refined prompt sent back to CLI[/blue]")
-
-        # # Wait for additional input from CLI via WebSocket
-        # while True:
-        #     additional_input = await websocket.recv()
-        #     console.print(
-        #         f"[green]Received additional input from WebSocket: {additional_input}[/green]")
-
-        #     # Process the additional input
-        #     additional_state = {
-        #         'original_user_input': additional_input,
-        #         'messages': [],
-        #         'status': False,
-        #         'request_id': request_id
-        #     }
-
-        #     refined_response = prompt_engineer_graph.app.astream(
-        #         additional_state, graph_config)
-
-        #     for response in refined_response:
-        #         if "__end__" not in response:
-        #             await websocket.send(f"Refined Additional Input: {response['llm_output_prompt_message_response']}")
-        #         else:
-        #             break
-
-        #     # Decision logic to end the conversation or keep going
-        #     decision_response = prompt_engineer_graph.app.astream(
-        #         additional_state, graph_config)
-
-        #     for decision in decision_response:
-        #         if decision['decision'].strip().upper() == 'YES':
-        #             await websocket.send("Conversation ended by LLM")
-        #             console.print(
-        #                 "[green]LLM has decided to end the conversation[/green]")
-        #             return
-
 
 async def main():
-    # ws_url = "ws://localhost:8000/ws/conversation"
-
-    # start_server = websockets.serve(handle_connection, "localhost", 8001)
 
     async with websockets.serve(handle_connection, "localhost", 8001):
         print("WebSocket server started at ws://localhost:8001")
         await asyncio.Future()
-    # asyncio.get_event_loop().run_until_complete(start_server)
-    # asyncio.get_event_loop().run_forever()
 
 
 if __name__ == "__main__":
@@ -224,28 +183,3 @@ if __name__ == "__main__":
         f"Project generated successfully! Project ID: {result['project_id']}, Project Name: {result['project_name']}, Location: {PROJECT_PATH}.")
     logger.info(
         f"Project generated successfully! Project ID: {result['project_id']}, Project Name: {result['project_name']}, Location: {PROJECT_PATH}.")
-
-    # count = 0
-
-    # project_details = {
-    #     "user_input_prompt_message": PROJECT_INPUT,
-    #     "request_id": count
-    # }
-
-    # metadata = {
-    #     "user_id": USER_ID,
-    #     "session_id": 0,
-    #     "organisation_id": 0,
-    #     "project_id": 1,
-    #     "application_id": 1,
-    #     "user_email": "a@gmail.com",
-    #     "project_input": PROJECT_INPUT,
-    #     "usergitid": "123",
-    #     "task_id": 1,
-    #     "agent_name": config.agents.prompt.agent_name,
-    #     "agent_id": config.agents.prompt.agent_id,
-    #     "thread_id": "1",
-    #     "system_process_id": 0
-    # }
-
-    # logger.info("metadata", metadata)

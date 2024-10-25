@@ -22,6 +22,7 @@ from websockets.exceptions import ConnectionClosedError
 import asyncio
 
 console = Console()
+API_URL = "http://localhost:8000"
 
 
 class PromptAgent(Agent[PromptState, PromptPrompts]):
@@ -191,6 +192,7 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
                 message_data = eval(message)
                 if "additional_input" in message_data and message_data['request_id'] == request_id:
                     additional_input = message_data['additional_input']
+                    # logger here
                     console.print(
                         f"[green]Received additional input: {additional_input}[/green]")
                     if len(additional_input) == 0:
@@ -211,24 +213,16 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
         """
         Post the enhanced prompt to both the WebSocket (for CLI) and the database.
         """
+
         llm_response = {
             "llm_output_prompt_message_response": prompt,
             "response_id": self.state['request_id']
         }
 
         try:
-            # # Send the prompt to the WebSocket for the CLI
-            # if websocket:
-            #     try:
-            #         await websocket.send(f"Refined Response: {prompt}")
-            #         logger.info(
-            #             f"Sent enhanced prompt to CLI via WebSocket for request_id {request_id}")
-            #     except ConnectionClosedError as e:
-            #         logger.error(f"WebSocket connection closed: {e}")
-            #         return
 
             #  Post the enhanced prompt to the database via FastAPI
-            url = f'http://localhost:8000/update_conversation/{request_id}'
+            url = f'{API_URL}/update_conversation/{request_id}'
             response = requests.put(url, json=llm_response)
             response.raise_for_status()
 
@@ -238,24 +232,6 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
         except requests.exceptions.RequestException as e:
             logger.error(f"Error posting enhanced prompt to the database: {e}")
 
-    # def post_enhanced_prompt(self, prompt):
-    #     llm_response = {
-    #         "llm_output_prompt_message_response": prompt,
-    #         "response_id": self.state['request_id']
-    #     }
-
-    #     try:
-    #         request_id = self.state['request_id']
-    #         url = f'http://localhost:8000/update_conversation/{request_id}'
-    #         response = requests.put(url, json=llm_response)
-    #         response.raise_for_status()
-
-    #         returned_data = response.json()
-    #         logger.info("posted! %s", returned_data)
-
-    #     except requests.exceptions.RequestException as e:
-    #         logger.error("Error creating project input: %s", e)
-
     def additional_info(self, prompt):
         self.state['request_id'] = self.state['request_id'] + 1
         additional_info = {
@@ -263,8 +239,9 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
             "request_id": self.state['request_id']
         }
         try:
+            url = f'{API_URL}/additional_input'
             response = requests.post(
-                "http://localhost:8000/additional_input", json=additional_info)
+                url, json=additional_info)
             response.raise_for_status()
 
             returned_data = response.json()
@@ -274,45 +251,3 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
 
         except requests.exceptions.RequestException as e:
             logger.error("Error creating project input: %s", e)
-
-    # def get_user_input(self):
-    #     try:
-    #         response = requests.get("http://localhost:8000/additional_info")
-    #         response.raise_for_status()
-
-    #         project_data = response.json()
-    #         logger.info("Retrieved %d additional user inputs.",
-    #                     len(project_data))
-    #         return project_data
-    #     except requests.exceptions.RequestException as e:
-    #         logger.error("Error retrieving project inputs: %s", e)
-    #         return None
-
-    # def get_enhanced_prompt(self, request_id: int):
-    #     retries = 5
-
-    #     while retries < self.max_retries:
-    #         try:
-    #             response = requests.get(
-    #                 f"http://localhost:8000/enhanced_prompt/{request_id}")
-    #             response.raise_for_status()
-    #             data = response.json()
-    #             if data.get("llm_output_prompt_message_response"):
-    #                 logger.info("Enhanced prompt found.")
-    #                 return data
-    #             else:
-    #                 logger.info(
-    #                     "Enhanced prompt not available yet. Retrying in %d seconds...",
-    #                     self.retry_interval
-    #                 )
-
-    #         except requests.exceptions.RequestException as e:
-    #             logger.error("Error retrieving enhanced prompt: %s", e)
-    #             return None
-
-    #         time.sleep(self.retry_interval)
-    #         retries += 1
-
-    #     logger.error(
-    #         "Max retries reached. Enhanced prompt not found for request ID: %s", request_id)
-    #     return None

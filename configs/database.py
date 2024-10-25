@@ -14,12 +14,3 @@ def get_client_local_db_file_path() -> str:
         os.makedirs(db_dir, exist_ok=True)
 
     return os.path.join(db_dir, "genpod.db")
-
-
-def get_client_local_asyncdb_file_path() -> str:
-    """Returns the path to the SQLite database file."""
-
-    if not os.path.exists(db_dir):
-        os.makedirs(db_dir, exist_ok=True)
-
-    return os.path.join(db_dir, "genpod_async.db")
