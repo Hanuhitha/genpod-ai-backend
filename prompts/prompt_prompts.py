@@ -65,7 +65,8 @@ class PromptPrompts:
 
             Output Format:
             - Respond with "YES" if the prompt is good enough and no further changes are needed.
-            - Respond with "NO" if the prompt needs further modification.
+            - Respond with "NO" if the prompt needs further modification . 
+            - Respond with "NO" if the user is still thinking and gives a black response.
             output format instructions:
             '{format_instructions}'
             """,

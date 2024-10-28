@@ -7,7 +7,7 @@ from sqlalchemy.orm import relationship
 class Conversation(Base):
     __tablename__ = "conversation"
     id = Column(Integer, primary_key=True, index=True)
-    request_id = Column(Integer, nullable=False)
+    request_id = Column(String, nullable=False)
     response_id = Column(Integer, nullable=True)
     user_input_prompt_message = Column(String, nullable=False)
     llm_output_prompt_message_response = Column(String, nullable=True)

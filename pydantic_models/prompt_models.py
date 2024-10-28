@@ -12,3 +12,5 @@ class Prompt_Generation(BaseModel):
 class Decision_Agent(BaseModel):
     decision: str = Field(...,
                           description="The decision taken by the model. YES or NO")
+    reason: str = Field(...,
+                        description="The reason for the decision taken.")

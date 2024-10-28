@@ -38,4 +38,4 @@ class UserResponse(BaseModel):
 
 class ProjectInput(BaseModel):
     user_input_prompt_message: str
-    request_id: int
+    request_id: str

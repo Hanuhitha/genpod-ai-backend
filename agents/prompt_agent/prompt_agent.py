@@ -121,16 +121,15 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
                 "messages": self.state['messages']
             })
 
-            self.add_message((
-                ChatRoles.AI,
-                f"{self.agent_name}: {refined_response['enhanced_prompt']}"
+            # self.add_message((
+            #     ChatRoles.AI,
+            #     f"{self.agent_name}: {refined_response['enhanced_prompt']}"
 
-            ))
+            # ))
             logger.info(
                 f"This is your structured project input: {refined_response['enhanced_prompt']}")
 
-            await self.websocket.send(f"Refined Response: {refined_response['enhanced_prompt']}")
-
+            await self.websocket.send(str(refined_response))
             await self.post_enhanced_prompt(refined_response['enhanced_prompt'], self.websocket, self.state['request_id'])
 
             logger.info(
@@ -139,31 +138,35 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
             # Get additional info from WebSocket (user feedback)
             user_response = await self.get_additional_info_via_websocket(
                 self.websocket, self.state['request_id'])
+
             self.add_message(((
                 ChatRoles.AI,
                 f"{self.agent_name}: Do you like the refined project input (Yes/No) If No, please provide the additional information:"
 
             ),
-                (ChatRoles.USER, f"User Response: {user_response}"
+                (ChatRoles.USER, f"User Response: {user_response if len(user_response.strip()) > 1 else 'Please wait for the user input'}"
 
                  )))
-
             # Check if the refined response meets the criteria using the decision agent
+
             decision_response = await self.decision_agent_chain.ainvoke({
                 "original_user_input": self.state['original_user_input'],
                 "messages": self.state['messages'] + [(ChatRoles.AI,  refined_response['enhanced_prompt'])]
             })
-
             # Add the decision to the messages
             self.add_message(
                 (ChatRoles.AI, f"{self.agent_name}: Decision - {decision_response['decision']}"))
-
-            await self.websocket.send(f"Decision result: {decision_response['decision']}")
-
             if decision_response['decision'].strip().upper() == 'YES':
                 self.state['status'] = True
             else:
                 self.state['status'] = False
+            # else:
+            #     self.state['status'] = True
+
+            self.add_message((
+                ChatRoles.AI,
+                f"{self.agent_name}: {refined_response['enhanced_prompt']}"
+            ))
 
         return {**self.state}
 
@@ -187,23 +190,14 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
         Listen for additional information from the WebSocket.
         """
         try:
-            while True:
-                message = await websocket.recv()
-                message_data = eval(message)
-                if "additional_input" in message_data and message_data['request_id'] == request_id:
-                    additional_input = message_data['additional_input']
-                    # logger here
-                    console.print(
-                        f"[green]Received additional input: {additional_input}[/green]")
-                    if len(additional_input) == 0:
-                        continue
-                    else:
-                        return additional_input
-
-        except websockets.exceptions.ConnectionClosedError:
-            logger.error(
-                f"WebSocket connection closed unexpectedly while waiting for additional input.")
-
+            message = await websocket.recv()
+            message_data = eval(message)
+            if "additional_input" in message_data and message_data['request_id'] == request_id:
+                additional_input = message_data['additional_input']
+                # logger here
+                console.print(
+                    f"[green]Received additional input: {additional_input}[/green]")
+                return additional_input
         except Exception as e:
             logger.error(f"Error receiving additional input: {e}")
 

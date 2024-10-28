@@ -8,15 +8,17 @@ from agents.prompt_agent.prompt_agent import PromptAgent
 
 from agents.supervisor.supervisor_state import SupervisorState
 from agents.prompt_agent.prompt_graph import PromptGraph
-from configs.database import get_client_local_db_file_path, get_client_local_asyncdb_file_path
+from configs.database import get_client_local_db_file_path
 from configs.project_config import ProjectConfig
 from configs.project_path import set_project_path
 from database.database import Database
 from genpod.team import TeamMembers
 from utils.logs.logging_utils import logger
+from pydantic_models.constants import ChatRoles
 from utils.time import get_timestamp
 import asyncio
 import websockets
+from websockets.asyncio.server import serve
 from rich.console import Console
 
 console = Console()
@@ -24,52 +26,54 @@ console = Console()
 print("\n\nWe greatly appreciate your interest! Please note that we are in the midst of active development and are striving to make improvements every day!\n\n")
 
 
-async def handle_connection(websocket, path):
+async def handle_connection(websocket):
 
-    logger.info("path", path)
+    # logger.info("path", path)
 
     prompt_config = config.agents_config[config.agents.prompt.agent_id]
     prompt_engineer_graph = PromptGraph(
         prompt_config.llm, DATABASE_PATH, websocket, is_async=True)
 
-    if path:
+    # if path:
 
-        # Wait for the project input and request ID from CLI via WebSocket
-        project_data = await websocket.recv()
-        project_data = eval(project_data)
-        project_input = project_data["user_input_prompt_message"]
-        request_id = project_data["request_id"]
+    # Wait for the project input and request ID from CLI via WebSocket
+    project_data = await websocket.recv()
+    project_data = eval(project_data)
+    project_input = project_data["user_input_prompt_message"]
+    request_id = project_data["request_id"]
 
-        logger.info(
-            f"Received project input: {project_input} with request ID: {request_id}")
+    logger.info(
+        f"Received project input: {project_input} with request ID: {request_id}")
 
-        # Configure the graph for the prompt agent
-        graph_config = {
-            "configurable": {
-                "thread_id": prompt_config.thread_id,
-            },
-            'recursion_limit': 500,
+    # Configure the graph for the prompt agent
+    graph_config = {
+        "configurable": {
+            "thread_id": prompt_config.thread_id,
+        },
+        'recursion_limit': 500,
 
-        }
-        prompt_response = prompt_engineer_graph.app.astream({
-            'original_user_input': project_input,
-            'messages': [],
-            'status': False,
-            'request_id': request_id
-        }, graph_config, stream_mode="values")
+    }
 
-        async for response in prompt_response:
-            if not response['status']:
-                # Send refined response to CLI via WebSocket
-                logger.info(f'{response}')
+    response = {
+        'original_user_input': project_input,
+        'messages': [],
+        'status': False,
+        'request_id': request_id,
+    }
 
-            else:
-                break
+    prompt_response = prompt_engineer_graph.app.astream(
+        response, graph_config, stream_mode="values")
+    async for response in prompt_response:
+        if not response['status']:
+            # Send refined response to CLI via WebSocket
+            logger.info(f'{response}')
+        else:
+            break
 
 
 async def main():
 
-    async with websockets.serve(handle_connection, "localhost", 8001):
+    async with serve(handle_connection, "localhost", 8001, ping_interval=20, ping_timeout=None):
         print("WebSocket server started at ws://localhost:8001")
         await asyncio.Future()
 
@@ -90,7 +94,6 @@ if __name__ == "__main__":
             "The `USER_ID` environment variable is not set. Please add it to the '.env' file with the format: USER_ID=4832")
 
     DATABASE_PATH = get_client_local_db_file_path()
-    ASYNC_DATABASE_PATH = get_client_local_asyncdb_file_path()
     db = Database(DATABASE_PATH)
 
     db.setup_db()
@@ -110,6 +113,7 @@ if __name__ == "__main__":
         agent.set_thread_id(session_detail['id'])
 
     asyncio.run(main())
+    # asyncio.get_event_loop().run_forever()
 
     # Run the async WebSocket handling
 

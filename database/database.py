@@ -103,8 +103,7 @@ class Database():
         logger.info("Creating database tables...")
 
         try:
-
-            Base.metadata.create_all(bind=self.engine)
+            # self.conversation_table.__table__.create(self.engine)
 
             # Create projects table
             self.projects_table.create()
@@ -124,7 +123,7 @@ class Database():
             # Create metadata table
             # self.metadata_table.create()
 
-            # # Create conversation table
+            # Create conversation table
             # self.conversation_table.create()
 
             self.connection.commit()
