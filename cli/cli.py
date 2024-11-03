@@ -34,7 +34,7 @@ def start_conversation():
     """
     request_id = generate_new_id()
     user_input_prompt_message = Prompt.ask(
-        f"{request_id} :User Input Prompt Message")
+        f"User Input Prompt Message")
 
     asyncio.run(websocket_conversation(request_id, user_input_prompt_message))
 
