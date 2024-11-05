@@ -24,7 +24,8 @@
         }
     },
     "forwardPorts": [
-        8888
+        8888,
+        7689
     ],
     "remoteEnv": {
         "OPENAPI_KEY": "your_openapi_key_here",

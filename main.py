@@ -2,6 +2,7 @@
 Driving code file for this project.
 """
 import os
+from neo4j import GraphDatabase
 
 import requests
 from agents.prompt_agent.prompt_agent import PromptAgent
@@ -21,6 +22,8 @@ import websockets
 from websockets.asyncio.server import serve
 from rich.console import Console
 
+from langchain_community.graphs import Neo4jGraph
+from langchain.chains import GraphCypherQAChain
 console = Console()
 
 print("\n\nWe greatly appreciate your interest! Please note that we are in the midst of active development and are striving to make improvements every day!\n\n")
@@ -32,7 +35,7 @@ async def handle_connection(websocket):
 
     prompt_config = config.agents_config[config.agents.prompt.agent_id]
     prompt_engineer_graph = PromptGraph(
-        prompt_config.llm, DATABASE_PATH, websocket, is_async=True)
+        prompt_config.llm, websocket, is_async=True, project_config=config)
 
     # if path:
 
@@ -62,7 +65,11 @@ async def handle_connection(websocket):
     }
 
     prompt_response = prompt_engineer_graph.app.astream(
-        response, graph_config, stream_mode="values")
+        response,
+        graph_config,
+        stream_mode="values"
+    )
+
     async for response in prompt_response:
         if not response['status']:
             # Send refined response to CLI via WebSocket
@@ -78,13 +85,47 @@ async def main():
         await asyncio.Future()
 
 
+def test_neo4j_connection():
+    config = ProjectConfig()
+    try:
+        with config.neo4j_driver.session("neo4j") as session:
+            # Run a simple test query to verify the connection
+            result = session.run("RETURN 'Connection successful!' AS message")
+            print(result.single()["message"])
+    except Exception as e:
+        print("Error connecting to Neo4j:", e)
+    finally:
+        config.close_neo4j_driver()
+
+
+def connect():
+    """Establish connection with Neo4j."""
+    graphdb = GraphDatabase.driver(database="neo4j", uri="bolt://127.0.0.1:7689",
+                                   auth=("neo4j", "password"))
+    print(f"Connected to Neo4j")
+
+
 if __name__ == "__main__":
 
     TIME_STAMP = get_timestamp()
     logger.info(f"Project Generation has been triggered at {TIME_STAMP}!")
 
+    # graph = Neo4jGraph(url="bolt://localhost:7689", database="neo4j",
+    #                    username="neo4j", password="password")
+
+    # result = graph.query("RETURN 'Neo4j connected successfully!' AS message")
+    # print(result)
+
+    #                                )
+    # session = graphdb.session()
+
+    # q1 = "MATCH (x) return (x)"
+    # session.run(q1)
+
     # Initialize the project config
     config = ProjectConfig()
+    connect()
+    test_neo4j_connection()
 
     logger.info("Project configuration loaded!")
 
