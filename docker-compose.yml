@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8888:8888"
+      - "7689:7689"
     volumes:
       - .:/opt/genpod
     command: sleep infinity

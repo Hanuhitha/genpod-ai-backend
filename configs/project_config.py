@@ -464,9 +464,9 @@ class ProjectConfig:
         }
 
         # Neo4j configuration
-        self.neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
-        self.neo4j_username = os.getenv("NEO4J_USERNAME", "neo4j")
-        self.neo4j_password = os.getenv("NEO4J_PASSWORD", "12345678")
+        # self.neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+        # self.neo4j_username = os.getenv("NEO4J_USERNAME", "neo4j")
+        # self.neo4j_password = os.getenv("NEO4J_PASSWORD", "12345678")
         self.neo4j_driver = self.init_neo4j_driver()
 
     # def init_neo4j_driver(self):
