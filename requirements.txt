@@ -33,3 +33,6 @@ unstructured[xlsx]
 unstructured[docx]
 notebook
 python-json-logger==2.0.7
+# asyncio
+# neo4j
+# aiosqlite

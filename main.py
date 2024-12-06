@@ -2,6 +2,8 @@
 Driving code file for this project.
 """
 import os
+from logfire import Logfire, configure
+import logfire
 from neo4j import GraphDatabase
 
 import requests
@@ -21,9 +23,8 @@ import asyncio
 import websockets
 from websockets.asyncio.server import serve
 from rich.console import Console
-
+from pydantic_settings import BaseSettings
 from langchain_community.graphs import Neo4jGraph
-from langchain.chains import GraphCypherQAChain
 console = Console()
 
 print("\n\nWe greatly appreciate your interest! Please note that we are in the midst of active development and are striving to make improvements every day!\n\n")
@@ -35,7 +36,7 @@ async def handle_connection(websocket):
 
     prompt_config = config.agents_config[config.agents.prompt.agent_id]
     prompt_engineer_graph = PromptGraph(
-        prompt_config.llm, websocket, is_async=True, project_config=config)
+        prompt_config.llm, DATABASE_PATH, websocket, is_async=True)
 
     # if path:
 
@@ -80,8 +81,8 @@ async def handle_connection(websocket):
 
 async def main():
 
-    async with serve(handle_connection, "localhost", 8001, ping_interval=20, ping_timeout=None):
-        print("WebSocket server started at ws://localhost:8001")
+    async with serve(handle_connection, "localhost", 8002, ping_interval=20, ping_timeout=None):
+        print("WebSocket server started at ws://localhost:8002")
         await asyncio.Future()
 
 
@@ -153,7 +154,33 @@ if __name__ == "__main__":
 
         agent.set_thread_id(session_detail['id'])
 
-    asyncio.run(main())
+
+    # logger = Logfire()  # Initialize without token argument
+    # logger.token = settings.token 
+
+    class LogfireSettings(BaseSettings):
+        token: str  # Token field to store the API key
+
+        class Config:
+            env_file = "/root/.logfire/default.toml" 
+            env_file_encoding = "utf-8"  
+            extra = "allow" 
+
+    # Initialize settings from the default.toml file
+    settings = LogfireSettings()
+
+    logger = Logfire()  # Initialize without token argument
+    logger.token = settings.token 
+
+
+    # Optional: Configure the log level
+    # logger.configure(level="info")
+    logfire.configure()
+
+    # Example: Log a simple message to test the setup
+    logger.info("Logfire logging initialized successfully in the project!")
+
+    # asyncio.run(main())
     # asyncio.get_event_loop().run_forever()
 
     # Run the async WebSocket handling

@@ -98,7 +98,7 @@ async def websocket_conversation(request_id: str, user_input_prompt_message: str
                     f"[red]Server Response: {response['response']}[/red]")
             # Ask if the user wants to provide additional input
             additional_input = Prompt.ask(
-                "Provide additional input (or type 'exit' to stop)")
+                "Provide additional input (or type 'yes' to stop)")
 
             # Send additional input to the server
             additional_payload = {

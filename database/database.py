@@ -120,10 +120,10 @@ class Database():
             #  Create tokens table
             self.tokens_table.create()
 
-            # Create metadata table
+            # # Create metadata table
             # self.metadata_table.create()
 
-            # Create conversation table
+            # # Create conversation table
             # self.conversation_table.create()
 
             self.connection.commit()

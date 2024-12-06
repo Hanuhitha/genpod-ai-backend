@@ -35,14 +35,14 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
     refined_input_chain: RunnableSequence
     decision_agent_chain: RunnableSequence
 
-    def __init__(self, llm: ChatOpenAI, websocket: WebSocket, graph) -> None:
+    def __init__(self, llm: ChatOpenAI, websocket: WebSocket) -> None:
         """
         Initializes the PromptAgent with a reference to PromptGraph for state management.
 
         Args:
             llm (ChatOpenAI): The language model instance.
             websocket (WebSocket): The WebSocket instance for communication.
-            graph (PromptGraph): The PromptGraph instance for Neo4j persistence.
+            # graph (PromptGraph): The PromptGraph instance for Neo4j persistence.
         """
         super().__init__(
             ProjectAgents.prompt.agent_id,
@@ -58,7 +58,7 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
 
         self.max_retries = 30
         self.retry_interval = 2
-        self.graph = graph
+        # self.graph = graph
 
         self.refined_input_chain = (
             self.prompts.prompt_generation_prompt
@@ -72,22 +72,22 @@ class PromptAgent(Agent[PromptState, PromptPrompts]):
             | JsonOutputParser()
         )
 
-    def save_state(self):
-        """
-        Saves the current state of the agent to Neo4j using PromptGraph.
-        """
-        self.graph.save_state_to_neo4j(self.state)
+    # def save_state(self):
+    #     """
+    #     Saves the current state of the agent to Neo4j using PromptGraph.
+    #     """
+    #     self.graph.save_state_to_neo4j(self.state)
 
-    def load_state(self, request_id: int):
-        """
-        Loads the state from Neo4j based on the request ID.
+    # def load_state(self, request_id: int):
+    #     """
+    #     Loads the state from Neo4j based on the request ID.
 
-        Args:
-            request_id (int): The ID of the request to load the state.
-        """
-        state = self.graph.get_current_state_from_neo4j(request_id)
-        if state:
-            self.state = state
+    #     Args:
+    #         request_id (int): The ID of the request to load the state.
+    #     """
+    #     state = self.graph.get_current_state_from_neo4j(request_id)
+    #     if state:
+    #         self.state = state
 
     def add_message(self, message: tuple[ChatRoles, str]) -> None:
         """
