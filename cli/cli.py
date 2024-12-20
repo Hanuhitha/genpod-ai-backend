@@ -8,7 +8,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 import time
 import websockets
 from websockets.asyncio.client import connect
-
+import json
 from websockets.exceptions import ConnectionClosedOK
 import uuid
 import asyncio
@@ -39,87 +39,216 @@ def start_conversation():
     asyncio.run(websocket_conversation(request_id, user_input_prompt_message))
 
 
-async def connect_websocket(WS_URL, request_id):
-    print('connecting')
-    websocket = await connect(f"{WS_URL}/{request_id}", ping_interval=20, ping_timeout=None)
-    print('connected')
-    return websocket
 
+# async def connect_websocket(WS_URL: str, request_id: str, max_retries: int = 5):
+#     """Connect to WebSocket with retries using exponential backoff."""
+#     attempt = 0
+#     websocket = None
+
+#     while attempt < max_retries:
+#         try:
+#             console.print(f"[INFO] Attempting to connect to WebSocket... (Attempt {attempt + 1}/{max_retries})")
+#             websocket = await connect(
+#                 f"{WS_URL}/{request_id}",
+#                 ping_interval=20,  # Send ping every 20 seconds
+#                 ping_timeout=30    # Wait 30 seconds for a pong response
+#             )
+#             console.print("[SUCCESS] Connected to WebSocket!")
+#             return websocket
+#         except websockets.exceptions.ConnectionClosedError as e:
+#             console.print(f"[WARNING] Connection failed: {e}")
+#             attempt += 1
+#             wait_time = min(2 ** attempt, 60)
+#             console.print(f"[INFO] Reconnecting in {wait_time} seconds... (Attempt {attempt}/{max_retries})")
+#             await asyncio.sleep(2 ** attempt) 
+#     console.print("[ERROR] Maximum retries reached. Could not connect to WebSocket.")
+#     return None  
+
+
+# async def websocket_conversation(request_id: str, user_input_prompt_message: str):
+#     """
+#     WebSocket connection to submit project info and handle conversation with the server.
+#     """
+#     continue_connection = False
+
+#     try:
+#         websocket = await connect_websocket(WS_URL, request_id)
+#         console.print(
+#             f"[yellow]Connected to WebSocket for Request ID: {request_id}[/yellow]")
+
+#         # Step 1: Send the initial project info to the WebSocket server
+#         project_payload = {
+#             "request_id": request_id,
+#             "user_input_prompt_message": user_input_prompt_message
+#         }
+#         post_response = requests.post(
+#             f"{API_URL}/project_info", json=project_payload)
+#         if post_response.status_code == 200:
+#             console.print(
+#                 f"[green]Project information submitted successfully![/green]")
+#         else:
+#             console.print(
+#                 f"[red]Failed to submit project info: {post_response.text}[/red]")
+#             return
+#         await websocket.send(str(project_payload))
+#         console.print(
+#             f"[blue]Sent project input: {user_input_prompt_message}[/blue]")
+
+#         # Step 2: Wait for the server's response (via FastAPI and the Prompt Agent)
+#         while True:
+#             # await websocket.send("ping")  # Send a keep-alive ping
+#             # await asyncio.sleep(5)  # Adjust interval as needed
+
+#             # try:
+#             response = await websocket.recv()
+#             print(response)
+#             response = eval(response)
+
+#             if 'enhanced_prompt' in response:
+#                 console.print(
+#                     f"[green]Server Response: {response['enhanced_prompt']}[/green]")
+#             if 'decision' in response:
+#                 if response['decision'] == 'YES':
+#                     await websocket.close()
+#                     break
+
+#             if 'response' in response:
+#                 console.print(
+#                     f"[red]Server Response: {response['response']}[/red]")
+#             # Ask if the user wants to provide additional input
+#             additional_input = Prompt.ask(
+#                 "Provide additional input (or type 'yes' to stop)")
+
+#             # Send additional input to the server
+#             additional_payload = {
+#                 "request_id": request_id,
+#                 "additional_input": additional_input
+#             }
+#             await websocket.send(str(additional_payload))
+#             console.print(
+#                 f"[blue]Sent additional input: {additional_input}[/blue]")
+
+#             await asyncio.sleep(5)
+
+#     except ConnectionClosedOK:
+#         await websocket.close()
+
+
+async def connect_websocket(WS_URL: str, request_id: str, max_retries: int = 5):
+    """Connect to WebSocket with retries using exponential backoff."""
+    attempt = 0
+    websocket = None
+
+    while attempt < max_retries:
+        try:
+            console.print(f"[INFO] Attempting to connect to WebSocket... (Attempt {attempt + 1}/{max_retries})")
+            websocket = await connect(
+                f"{WS_URL}/{request_id}",
+                ping_interval=20,  # Send ping every 20 seconds
+                ping_timeout=30    # Wait 30 seconds for a pong response
+            )
+            console.print("[SUCCESS] Connected to WebSocket!")
+            return websocket
+        except websockets.exceptions.ConnectionClosedError as e:
+            console.print(f"[WARNING] Connection failed: {e}")
+        except Exception as e:
+            console.print(f"[ERROR] Unexpected error occurred: {e}")
+        
+        attempt += 1
+        wait_time = min(2 ** attempt, 60)  # Exponential backoff, capped at 60 seconds
+        console.print(f"[INFO] Reconnecting in {wait_time} seconds... (Attempt {attempt}/{max_retries})")
+        await asyncio.sleep(wait_time)
+
+    console.print("[ERROR] Maximum retries reached. Could not connect to WebSocket.")
+    if websocket:
+        await websocket.close()
+    return None
 
 async def websocket_conversation(request_id: str, user_input_prompt_message: str):
     """
     WebSocket connection to submit project info and handle conversation with the server.
     """
-    continue_connection = False
+    max_retries = 5  # Max retries for connection
+    attempt = 0      # Retry attempts
 
-    try:
-        websocket = await connect_websocket(WS_URL, request_id)
-        console.print(
-            f"[yellow]Connected to WebSocket for Request ID: {request_id}[/yellow]")
+    while attempt < max_retries:
+        try:
+            websocket = await connect_websocket(WS_URL, request_id, max_retries=5)
+            if websocket is None:
+                console.print("[ERROR] Could not establish a WebSocket connection.")
+                break
 
-        # Step 1: Send the initial project info to the WebSocket server
-        project_payload = {
-            "request_id": request_id,
-            "user_input_prompt_message": user_input_prompt_message
-        }
-        post_response = requests.post(
-            f"{API_URL}/project_info", json=project_payload)
-        if post_response.status_code == 200:
-            console.print(
-                f"[green]Project information submitted successfully![/green]")
-        else:
-            console.print(
-                f"[red]Failed to submit project info: {post_response.text}[/red]")
-            return
-        await websocket.send(str(project_payload))
-        console.print(
-            f"[blue]Sent project input: {user_input_prompt_message}[/blue]")
+            console.print(f"[yellow]Connected to WebSocket for Request ID: {request_id}[/yellow]")
 
-        # Step 2: Wait for the server's response (via FastAPI and the Prompt Agent)
-        while True:
-            # await websocket.send("ping")  # Send a keep-alive ping
-            # await asyncio.sleep(5)  # Adjust interval as needed
+            # Step 1: Send the initial project info to the WebSocket server
+            project_payload = {
+                "request_id": request_id,
+                "user_input_prompt_message": user_input_prompt_message
+            }
+            post_response = requests.post(f"{API_URL}/project_info", json=project_payload)
+            if post_response.status_code == 200:
+                console.print(f"[green]Project information submitted successfully![/green]")
+            else:
+                console.print(f"[red]Failed to submit project info: {post_response.text}[/red]")
+                return
 
-            # try:
-            response = await websocket.recv()
-            print(response)
-            response = eval(response)
+            await websocket.send(str(project_payload))
+            console.print(f"[blue]Sent project input: {user_input_prompt_message}[/blue]")
 
-            if 'enhanced_prompt' in response:
-                console.print(
-                    f"[green]Server Response: {response['enhanced_prompt']}[/green]")
-            if 'decision' in response:
-                if response['decision'] == 'YES':
-                    await websocket.close()
+            while True:
+                try:
+                    await websocket.send(json.dumps({"type": "ping", "message": "Keep-alive ping from client"}))
+                    console.print("[INFO] Sent ping to server to keep connection alive")
+
+                    response = await asyncio.wait_for(websocket.recv(), timeout=30)
+                    response = eval(response)
+
+                    if 'enhanced_prompt' in response:
+                        console.print(f"[green]Server Response: {response['enhanced_prompt']}[/green]")
+
+                    if 'decision' in response and response['decision'] == 'YES':
+                        await websocket.close()
+                        break
+
+                    if 'response' in response:
+                        console.print(f"[red]Server Response: {response['response']}[/red]")
+
+                    # Ask for additional input
+                    additional_input = Prompt.ask("Provide additional input (or type 'yes' to stop)")
+
+                    additional_payload = {
+                        "request_id": request_id,
+                        "additional_input": additional_input
+                    }
+                    await websocket.send(str(additional_payload))
+                    console.print(f"[blue]Sent additional input: {additional_input}[/blue]")
+
+                    await asyncio.sleep(20)  # Wait before sending the next ping
+
+                except asyncio.TimeoutError:
+                    console.print("[ERROR] Timeout waiting for server response. Closing connection.")
                     break
 
-            if 'response' in response:
-                console.print(
-                    f"[red]Server Response: {response['response']}[/red]")
-            # Ask if the user wants to provide additional input
-            additional_input = Prompt.ask(
-                "Provide additional input (or type 'yes' to stop)")
+        except ConnectionClosedOK:
+            console.print("[INFO] Server closed connection cleanly. Closing WebSocket.")
+            break
 
-            # Send additional input to the server
-            additional_payload = {
-                "request_id": request_id,
-                "additional_input": additional_input
-            }
-            await websocket.send(str(additional_payload))
-            console.print(
-                f"[blue]Sent additional input: {additional_input}[/blue]")
+        except websockets.exceptions.ConnectionClosedError as e:
+            console.print(f"[ERROR] Connection closed unexpectedly: {e}")
+            attempt += 1
+            wait_time = min(2 ** attempt, 60)  # Exponential backoff, capped at 60s
+            console.print(f"[INFO] Reconnecting in {wait_time} seconds... (Attempt {attempt}/{max_retries})")
+            await asyncio.sleep(wait_time)
 
-            # if additional_input.lower() == 'exit':
-            #     await websocket.close()
-            #     break
-        # except websockets.ConnectionClosed:
-            # print("Connection closed, reconnecting...")
-            # Break inner loop to reconnect
-            await asyncio.sleep(5)
-            # websocket = await connect_websocket(WS_URL, request_id)
+        except Exception as e:
+            console.print(f"[ERROR] Unexpected error occurred: {e}")
+            break
 
-    except ConnectionClosedOK:
-        await websocket.close()
+        finally:
+            if 'websocket' in locals():
+                await websocket.close()
+
+    console.print("[ERROR] Max retries reached. Could not connect to WebSocket.")
 
 
 @app.command()

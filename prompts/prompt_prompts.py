@@ -32,6 +32,27 @@ class PromptPrompts:
                 - Detail API specifications, database connections, and hosting environment requirements.
             5. **Validation & Error Handling**:
                 - Include input validation checkpoints, data formats, and error handling mechanisms.
+            6. **User Stories & Acceptance Criteria**:
+                - Break down the system into specific user stories, defining actions the user should be able to perform.
+                - Each user story should be in the following format:
+                
+                  **User Story:** 
+                  As a [type of user], I want to [action to achieve] so that [goal to achieve].
+                  
+                  **Acceptance Criteria:**
+                  - List of conditions or requirements that must be met for the user story to be considered complete.
+                  - These criteria should be clear, testable, and measurable.
+                
+                **Example of User Story & Acceptance Criteria**:
+                **User Story**: 
+                As a **developer**, I want to **submit a project prompt** so that **the prompt is refined and used for AI-based generation**.
+                
+                **Acceptance Criteria**:
+                - The user should be able to submit a prompt via the command line interface (CLI).
+                - The system should store the submitted prompt in the database.
+                - The system should provide feedback on the status of the prompt submission.
+                - If the system encounters an error (like invalid input), it should display an error message to the user.
+                - If the WebSocket connection fails, the user should be notified and reconnected automatically.
 
             Instructions for Improvement:
             - Use clear and precise language.
@@ -50,6 +71,7 @@ class PromptPrompts:
             "format_instructions": PydanticOutputParser(pydantic_object=Prompt_Generation).get_format_instructions()
         }
     )
+
 
     decision_agent_prompt: PromptTemplate = PromptTemplate(
         template="""

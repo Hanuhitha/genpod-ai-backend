@@ -155,32 +155,7 @@ if __name__ == "__main__":
         agent.set_thread_id(session_detail['id'])
 
 
-    # logger = Logfire()  # Initialize without token argument
-    # logger.token = settings.token 
-
-    class LogfireSettings(BaseSettings):
-        token: str  # Token field to store the API key
-
-        class Config:
-            env_file = "/root/.logfire/default.toml" 
-            env_file_encoding = "utf-8"  
-            extra = "allow" 
-
-    # Initialize settings from the default.toml file
-    settings = LogfireSettings()
-
-    logger = Logfire()  # Initialize without token argument
-    logger.token = settings.token 
-
-
-    # Optional: Configure the log level
-    # logger.configure(level="info")
-    logfire.configure()
-
-    # Example: Log a simple message to test the setup
-    logger.info("Logfire logging initialized successfully in the project!")
-
-    # asyncio.run(main())
+    asyncio.run(main())
     # asyncio.get_event_loop().run_forever()
 
     # Run the async WebSocket handling

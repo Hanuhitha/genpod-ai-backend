@@ -13,7 +13,7 @@ from configs.project_config import LLMConfig
 from database.database import Database
 from database.tables.conversation import Conversation
 from fastapi.middleware.cors import CORSMiddleware
-
+import websockets
 from fast_api.prompt_agent_fast_api.models import LLMResponse, Metadata, ProjectInput, UserResponse
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
@@ -329,47 +329,77 @@ async def get_enhanced_prompt(request_id: str, db: Session = Depends(get_db)):
 @app.websocket("/ws/enhanced_prompt/{request_id}")
 async def websocket_enhanced_prompt(websocket: WebSocket, request_id: str, db: Session = Depends(get_db)):
     await websocket.accept()
+    print(f"[INFO] WebSocket connection accepted for Request ID: {request_id}")
+
+    max_retries = 300  # Maximum number of retries
+    attempt = 0  # Used for exponential backoff
 
     try:
-        max_retries = 300
-        retry_interval = 3
-
-        for _ in range(max_retries):
-            conversation = db.query(Conversation).filter(
-                Conversation.request_id == request_id).first()
-
+        while True:
+            # Check if enhanced prompt is available
+            conversation = db.query(Conversation).filter(Conversation.request_id == request_id).first()
             if conversation and conversation.llm_output_prompt_message_response:
                 await websocket.send_json({
                     "status": "success",
                     "llm_response": conversation.llm_output_prompt_message_response
                 })
                 await websocket.close()
+                print(f"[INFO] WebSocket closed after sending enhanced prompt for Request ID: {request_id}")
                 return
 
-            await asyncio.sleep(retry_interval)
+            # Send a ping to keep the connection alive
+            await websocket.send_json({
+                "type": "ping",
+                "message": "Keep-alive ping from server"
+            })
+            print(f"[INFO] Sent ping to client for Request ID: {request_id}")
 
-        await websocket.send_json({
-            "status": "error",
-            "message": "Enhanced prompt not found."
-        })
+            await asyncio.sleep(min(2 ** attempt, 30))  # Exponential backoff, capped at 30s
+            attempt += 1
+
+            if attempt > max_retries:
+                await websocket.send_json({
+                    "status": "error",
+                    "message": "Enhanced prompt not found."
+                })
+                await websocket.close()
+                break
+
+    except asyncio.TimeoutError:
+        print(f"[ERROR] Timeout occurred for Request ID: {request_id}. Closing connection.")
         await websocket.close()
 
     except WebSocketDisconnect:
-        print(
-            f"Client disconnected while waiting for enhanced prompt: {request_id}")
+        print(f"[INFO] Client disconnected while waiting for enhanced prompt: {request_id}")
+
+    except websockets.exceptions.ConnectionClosedError as e:
+        print(f"[ERROR] WebSocket connection closed unexpectedly for Request ID: {request_id}. Error: {e}")
+        await websocket.close()
+
+    except Exception as e:
+        print(f"[ERROR] Unexpected error occurred: {e}")
+        await websocket.close()
+
 
 
 @app.websocket("/ws/conversation/{request_id}")
 async def websocket_conversation(websocket: WebSocket, request_id: str, db: Session = Depends(get_db)):
     await websocket.accept()
     active_connections[request_id] = websocket
+
     try:
         while True:
-            # Wait for messages from the CLI
-            message = await websocket.receive_text()
+            # Send a ping to keep the connection alive
+            await websocket.send_json({
+                "type": "ping",
+                "message": "Keep-alive ping from server"
+            })
+            print(f"[INFO] Sent ping to client for Request ID: {request_id}")
+
+            # Wait for client message (timeout if no message is received in 30s)
+            message = await asyncio.wait_for(websocket.receive_text(), timeout=30)
             message_data = eval(message)
 
-            # Store project input in the DB
             if "user_input_prompt_message" in message_data:
                 project_input = message_data['user_input_prompt_message']
                 new_conversation = Conversation(
@@ -380,42 +410,82 @@ async def websocket_conversation(websocket: WebSocket, request_id: str, db: Sess
                 )
                 db.add(new_conversation)
                 db.commit()
-
                 await websocket.send_text(f"Project input received for Request ID {request_id}")
 
-            # Handle additional input
             elif "additional_input" in message_data:
                 additional_input = message_data['additional_input']
-                conversation = Conversation(
+                new_conversation = Conversation(
                     request_id=request_id,
                     user_input_prompt_message=additional_input,
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow()
                 )
-                db.add(conversation)
+                db.add(new_conversation)
                 db.commit()
-
                 await websocket.send_text(f"Additional input received for Request ID {request_id}")
+
+    except asyncio.TimeoutError:
+        print(f"[ERROR] Timeout occurred for Request ID: {request_id}. Closing connection.")
+        await websocket.close()
 
     except WebSocketDisconnect:
         del active_connections[request_id]
-        print(f"Client {request_id} disconnected.")
+        print(f"[INFO] Client {request_id} disconnected.")
+
+    except websockets.exceptions.ConnectionClosedError as e:
+        print(f"[ERROR] WebSocket connection closed unexpectedly for Request ID: {request_id}. Error: {e}")
+        await websocket.close()
+
+    except Exception as e:
+        print(f"[ERROR] Unexpected error occurred: {e}")
+        await websocket.close()
+
+# @app.websocket("/ws/enhanced_prompt/{request_id}")
+# async def websocket_enhanced_prompt(websocket: WebSocket, request_id: str, db: Session = Depends(get_db)):
+#     await websocket.accept()
+
+#     try:
+#         max_retries = 300
+#         retry_interval = 3
+
+#         for _ in range(max_retries):
+#             conversation = db.query(Conversation).filter(
+#                 Conversation.request_id == request_id).first()
+
+#             if conversation and conversation.llm_output_prompt_message_response:
+#                 await websocket.send_json({
+#                     "status": "success",
+#                     "llm_response": conversation.llm_output_prompt_message_response
+#                 })
+#                 await websocket.close()
+#                 return
+
+#             await asyncio.sleep(retry_interval)
+
+#         await websocket.send_json({
+#             "status": "error",
+#             "message": "Enhanced prompt not found."
+#         })
+#         await websocket.close()
+
+#     except WebSocketDisconnect:
+#         print(
+#             f"Client disconnected while waiting for enhanced prompt: {request_id}")
 
 
 # @app.websocket("/ws/conversation/{request_id}")
-# async def websocket_conversation(websocket: WebSocket, request_id: int, db: Session = Depends(get_db)):
+# async def websocket_conversation(websocket: WebSocket, request_id: str, db: Session = Depends(get_db)):
 #     await websocket.accept()
 #     active_connections[request_id] = websocket
 #     try:
 #         while True:
-#             # Step 1: Receive the input from the client (CLI)
+#             # Wait for messages from the CLI
 #             message = await websocket.receive_text()
 #             message_data = eval(message)
 
-#             # Handle project input
+#             # Store project input in the DB
 #             if "user_input_prompt_message" in message_data:
 #                 project_input = message_data['user_input_prompt_message']
-#                 # Save the project input to the database
 #                 new_conversation = Conversation(
 #                     request_id=request_id,
 #                     user_input_prompt_message=project_input,
@@ -424,43 +494,25 @@ async def websocket_conversation(websocket: WebSocket, request_id: str, db: Sess
 #                 )
 #                 db.add(new_conversation)
 #                 db.commit()
-#                 db.refresh(new_conversation)
 
-#                 # Step 2: Process the input with the Prompt Agent
-#                 refined_response = prompt_agent.chat_node({
-#                     'original_user_input': project_input,
-#                     'messages': [],
-#                     'status': False,
-#                     'request_id': request_id
-#                 })
-
-#                 # Step 3: Send the refined response back to the client
-#                 await websocket.send_text(f"Refined Response: {refined_response['messages'][-1]}")
+#                 await websocket.send_text(f"Project input received for Request ID {request_id}")
 
 #             # Handle additional input
 #             elif "additional_input" in message_data:
 #                 additional_input = message_data['additional_input']
-#                 new_conversation = Conversation(
+#                 conversation = Conversation(
 #                     request_id=request_id,
 #                     user_input_prompt_message=additional_input,
 #                     created_at=datetime.utcnow(),
 #                     updated_at=datetime.utcnow()
 #                 )
-#                 db.add(new_conversation)
+#                 db.add(conversation)
 #                 db.commit()
-#                 db.refresh(new_conversation)
 
-#                 # Process the additional input through the Prompt Agent
-#                 refined_response = prompt_agent.chat_node({
-#                     'original_user_input': additional_input,
-#                     'messages': [],
-#                     'status': False,
-#                     'request_id': request_id
-#                 })
-
-#                 # Send the refined additional input response
-#                 await websocket.send_text(f"Additional Input Refined: {refined_response['messages'][-1]}")
+#                 await websocket.send_text(f"Additional input received for Request ID {request_id}")
 
 #     except WebSocketDisconnect:
 #         del active_connections[request_id]
 #         print(f"Client {request_id} disconnected.")
+
+
